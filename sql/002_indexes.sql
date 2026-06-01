@@ -27,6 +27,13 @@ CREATE INDEX IF NOT EXISTS idx_criminal_offences_fts ON criminal_offences
 CREATE INDEX IF NOT EXISTS idx_gazette_statute ON gazette_notifications(statute_id);
 CREATE INDEX IF NOT EXISTS idx_gazette_type_date ON gazette_notifications(notification_type, notification_date);
 
+CREATE INDEX IF NOT EXISTS idx_legal_books_source ON legal_books(source_code, material_type);
+CREATE INDEX IF NOT EXISTS idx_legal_books_subject_tags ON legal_books USING GIN(subject_tags);
+CREATE INDEX IF NOT EXISTS idx_book_chapters_book ON book_chapters(book_id);
+CREATE INDEX IF NOT EXISTS idx_book_chunks_book ON book_chunks(book_id);
+CREATE INDEX IF NOT EXISTS idx_book_chunks_fts ON book_chunks
+  USING GIN (to_tsvector('english', coalesce(chunk_text, '')));
+
 CREATE INDEX IF NOT EXISTS idx_cases_court ON cases(court_id);
 CREATE INDEX IF NOT EXISTS idx_cases_date ON cases(decision_date);
 CREATE INDEX IF NOT EXISTS idx_cases_cnr ON cases(cnr_number);

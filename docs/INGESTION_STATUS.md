@@ -29,6 +29,9 @@ Current staging counts:
 - extracted document texts: 41
 - Supreme Court cases: 25
 - Supreme Court judgments: 25
+- legal books/materials: 3
+- legal book chapters: 26
+- legal book chunks: 332
 
 ## Production Corpus Target
 
@@ -71,6 +74,7 @@ The latest 25 official Supreme Court judgment PDFs visible on the Supreme Court 
 - High Court judgments
 - District court/eCourts data
 - BNS offence/charge catalog rows
+- full Law Commission report corpus
 - OCR for scanned judgment PDFs
 - AI extraction fields
 - embeddings/vector search

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-01T08:08:39.787746+00:00",
+  "generated_at": "2026-06-01T10:45:17.725536+00:00",
   "staging_db": "F:\\indian-legal-database\\data\\legal_corpus_staging.sqlite",
   "status": "available",
   "targets": {
@@ -125,13 +125,16 @@
     }
   },
   "counts": {
-    "data_sources": 9,
-    "source_documents": 91,
+    "data_sources": 12,
+    "source_documents": 95,
     "statutes": 16,
     "sections": 5421,
-    "document_texts": 41,
+    "document_texts": 44,
     "cases": 25,
-    "judgments": 25
+    "judgments": 25,
+    "legal_books": 3,
+    "book_chapters": 26,
+    "book_chunks": 332
   },
   "progress": {
     "target_judgments": 10000,
@@ -444,6 +447,26 @@
       "diary_no": "79802022",
       "decision_date": "2026-05-29",
       "source_url": "https://www.sci.gov.in/view-pdf/?diary_no=79802022&type=j&order_date=2026-05-29&from=latest_judgements_order"
+    }
+  ],
+  "legal_books": [
+    {
+      "title": "Legal Studies Textbook Class XI",
+      "material_type": "TEXTBOOK",
+      "source_code": "CBSE",
+      "source_url": "https://cbseacademic.nic.in/web_material/publication/Legal_Studies_Book_v8_XI.pdf"
+    },
+    {
+      "title": "Legal Studies for Class XII",
+      "material_type": "TEXTBOOK",
+      "source_code": "CBSE",
+      "source_url": "https://cbseacademic.nic.in/web_material/publication/LegalStudies_XII_2023.pdf"
+    },
+    {
+      "title": "Legal Studies Text Book Class XII First Edition",
+      "material_type": "TEXTBOOK",
+      "source_code": "CBSE",
+      "source_url": "https://cbseacademic.nic.in/web_material/doc/Legal_Studies/Legal%20Studies%20Text%20Book%20Class%20XII.pdf"
     }
   ]
 }

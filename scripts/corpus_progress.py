@@ -14,6 +14,16 @@ def count(conn: sqlite3.Connection, sql: str) -> int:
     return int(conn.execute(sql).fetchone()[0])
 
 
+def table_exists(conn: sqlite3.Connection, table_name: str) -> bool:
+    return (
+        conn.execute(
+            "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = ?",
+            (table_name,),
+        ).fetchone()[0]
+        > 0
+    )
+
+
 def main() -> int:
     targets = json.loads(TARGET_PATH.read_text(encoding="utf-8"))
     target_judgments = int(targets["target_judgments"])
@@ -33,6 +43,12 @@ def main() -> int:
                 "statutes": count(conn, "SELECT COUNT(*) FROM statutes"),
                 "sections": count(conn, "SELECT COUNT(*) FROM sections"),
                 "document_texts": count(conn, "SELECT COUNT(*) FROM document_texts"),
+                "legal_books": count(conn, "SELECT COUNT(*) FROM legal_books")
+                if table_exists(conn, "legal_books")
+                else 0,
+                "book_chunks": count(conn, "SELECT COUNT(*) FROM book_chunks")
+                if table_exists(conn, "book_chunks")
+                else 0,
             }
         finally:
             conn.close()
@@ -45,6 +61,8 @@ def main() -> int:
         "current_statutes": current["statutes"],
         "current_sections": current["sections"],
         "current_document_texts": current["document_texts"],
+        "current_legal_books": current.get("legal_books", 0),
+        "current_book_chunks": current.get("book_chunks", 0),
         "court_level_targets": targets["court_level_mix"],
         "domain_targets": targets["domain_mix"],
     }
@@ -54,4 +72,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

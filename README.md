@@ -82,4 +82,10 @@ Track progress:
 python .\scripts\corpus_progress.py
 ```
 
+Local chatbot prototype:
+
+```powershell
+python .\scripts\chat_local.py "What is the basic structure of Indian courts?"
+```
+
 Private user files must use the `private_case_*` tables and must not be mixed into public training data unless explicit consent and anonymization are implemented.

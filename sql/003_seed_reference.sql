@@ -6,7 +6,10 @@ VALUES
   ('ESCR', 'e-SCR Supreme Court Reports', 'JUDGMENT', 'https://scr.sci.gov.in/scrsearch/', 'INDIA', 'Official electronic Supreme Court Reports search.'),
   ('DOJ_JUDGMENTS', 'Department of Justice Judgment Search Portal', 'JUDGMENT', 'https://doj.gov.in/judgment-search-portal/', 'INDIA', 'High Court judgments and final orders search entry point.'),
   ('ECOURTS', 'eCourts Services', 'CASE_STATUS', 'https://services.ecourts.gov.in/ecourtindia_v6/', 'INDIA', 'District court case status, orders and judgments where public.'),
-  ('NJDG', 'National Judicial Data Grid', 'COURT_METADATA', 'https://doj.gov.in/the-national-judicial-data-grid-njdg/', 'INDIA', 'Aggregate judicial data, not a full public case-file API.')
+  ('NJDG', 'National Judicial Data Grid', 'COURT_METADATA', 'https://doj.gov.in/the-national-judicial-data-grid-njdg/', 'INDIA', 'Aggregate judicial data, not a full public case-file API.'),
+  ('CBSE', 'Central Board of Secondary Education Academic Unit', 'REFERENCE', 'https://cbseacademic.nic.in/', 'INDIA', 'Official legal studies textbooks and support material.'),
+  ('LAW_COMMISSION', 'Law Commission of India', 'REFERENCE', 'https://lawcommissionofindia.nic.in/', 'INDIA', 'Official law reform reports and category reports.'),
+  ('NALSA', 'National Legal Services Authority', 'REFERENCE', 'https://nalsa.gov.in/', 'INDIA', 'Official legal aid manuals, schemes and handbooks where public.')
 ON CONFLICT (source_code) DO NOTHING;
 
 INSERT INTO courts (court_code, court_name, court_level, state)

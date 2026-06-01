@@ -43,8 +43,10 @@ Implemented:
 - 10,000-judgment corpus target configuration and progress reporting
 - staging SQLite database workflow because Docker/WSL is blocked on local admin elevation
 - official-source statute ingestion for 16 priority Acts
+- legal books/materials ingestion with chapter and chunk indexing
 - official Supreme Court latest judgment ingestion
 - PDF text extraction using PyMuPDF
+- local Ollama chatbot client with retrieval from book chunks
 - citation parser skeleton
 - embedding pipeline skeleton
 - AI extraction prompt/validation skeleton

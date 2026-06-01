@@ -16,6 +16,16 @@ def scalar(conn: sqlite3.Connection, sql: str) -> int:
     return int(conn.execute(sql).fetchone()[0])
 
 
+def table_exists(conn: sqlite3.Connection, table_name: str) -> bool:
+    return (
+        conn.execute(
+            "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = ?",
+            (table_name,),
+        ).fetchone()[0]
+        > 0
+    )
+
+
 def rows(conn: sqlite3.Connection, sql: str) -> list[dict[str, object]]:
     cursor = conn.execute(sql)
     columns = [description[0] for description in cursor.description]
@@ -51,6 +61,15 @@ def build_manifest() -> dict[str, object]:
                 "document_texts": scalar(conn, "SELECT COUNT(*) FROM document_texts"),
                 "cases": scalar(conn, "SELECT COUNT(*) FROM cases"),
                 "judgments": judgment_count,
+                "legal_books": scalar(conn, "SELECT COUNT(*) FROM legal_books")
+                if table_exists(conn, "legal_books")
+                else 0,
+                "book_chapters": scalar(conn, "SELECT COUNT(*) FROM book_chapters")
+                if table_exists(conn, "book_chapters")
+                else 0,
+                "book_chunks": scalar(conn, "SELECT COUNT(*) FROM book_chunks")
+                if table_exists(conn, "book_chunks")
+                else 0,
             },
             "progress": {
                 "target_judgments": target_judgments,
@@ -93,6 +112,17 @@ def build_manifest() -> dict[str, object]:
                 LIMIT 25
                 """,
             ),
+            "legal_books": rows(
+                conn,
+                """
+                SELECT title, material_type, source_code, source_url
+                FROM legal_books
+                ORDER BY id
+                LIMIT 50
+                """,
+            )
+            if table_exists(conn, "legal_books")
+            else [],
         }
     finally:
         conn.close()

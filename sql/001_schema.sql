@@ -39,7 +39,8 @@ CREATE TABLE IF NOT EXISTS source_documents (
   canonical_url TEXT,
   document_type TEXT NOT NULL CHECK (document_type IN (
     'ACT_HTML', 'ACT_PDF', 'SECTION_HTML', 'GAZETTE_PDF', 'JUDGMENT_PDF',
-    'ORDER_PDF', 'CASE_STATUS_JSON', 'HTML_PAGE', 'OTHER'
+    'ORDER_PDF', 'BOOK_PDF', 'TEXTBOOK_PDF', 'REPORT_PDF', 'MANUAL_PDF',
+    'CASE_STATUS_JSON', 'HTML_PAGE', 'OTHER'
   )),
   s3_key TEXT,
   local_path TEXT,
@@ -158,6 +159,49 @@ CREATE TABLE IF NOT EXISTS gazette_notifications (
   full_text TEXT,
   extraction_status TEXT DEFAULT 'PENDING',
   created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS legal_books (
+  id BIGSERIAL PRIMARY KEY,
+  title TEXT NOT NULL,
+  material_type TEXT NOT NULL CHECK (material_type IN (
+    'TEXTBOOK', 'REPORT', 'HANDBOOK', 'MANUAL', 'GUIDE', 'COMMENTARY', 'OTHER'
+  )),
+  source_code TEXT REFERENCES data_sources(source_code),
+  jurisdiction TEXT DEFAULT 'INDIA',
+  subject_tags TEXT[],
+  source_url TEXT NOT NULL,
+  source_document_id BIGINT REFERENCES source_documents(id),
+  content_hash TEXT,
+  rights_note TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(title, source_url)
+);
+
+CREATE TABLE IF NOT EXISTS book_chapters (
+  id BIGSERIAL PRIMARY KEY,
+  book_id BIGINT NOT NULL REFERENCES legal_books(id) ON DELETE CASCADE,
+  chapter_number TEXT,
+  chapter_title TEXT,
+  start_char INTEGER,
+  end_char INTEGER,
+  chapter_text TEXT,
+  content_hash TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(book_id, chapter_number, chapter_title)
+);
+
+CREATE TABLE IF NOT EXISTS book_chunks (
+  id BIGSERIAL PRIMARY KEY,
+  book_id BIGINT NOT NULL REFERENCES legal_books(id) ON DELETE CASCADE,
+  chapter_id BIGINT REFERENCES book_chapters(id) ON DELETE CASCADE,
+  chunk_index INTEGER NOT NULL,
+  chunk_text TEXT NOT NULL,
+  word_count INTEGER,
+  content_hash TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(book_id, chapter_id, chunk_index)
 );
 
 CREATE TABLE IF NOT EXISTS cases (
