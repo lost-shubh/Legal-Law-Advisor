@@ -12,13 +12,19 @@ The project is organized around three principles:
 
 ```text
 indian-legal-database/
+  apps/                 API, citizen web app, admin app, lawyer review app
+  services/             service ownership boundaries for ingestion/RAG/case intake
+  packages/             shared contracts, prompts and utilities
   sql/                  PostgreSQL schema, indexes, and seed data
   legal_db/             Python package for ingestion and processing
   docs/                 Build plan, source notes, compliance, runbooks
+  infra/                deployment and operations skeleton
   tests/                Small validation tests
   data/                 Local raw/processed/tmp storage, ignored by git
   logs/                 Runtime logs, ignored by git
 ```
+
+See [FULL_PROJECT_STRUCTURE.md](docs/architecture/FULL_PROJECT_STRUCTURE.md) for the complete planned structure.
 
 ## Local Start
 
