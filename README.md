@@ -94,11 +94,26 @@ Local chatbot prototype:
 python .\scripts\chat_local.py "What is the basic structure of Indian courts?"
 ```
 
+Check the local Ollama model selection:
+
+```powershell
+python .\scripts\ollama_status.py
+```
+
 API vertical slice:
 
 ```powershell
 $env:PYTHONPATH="F:\indian-legal-database;F:\indian-legal-database\apps\api\src"
 uvicorn legal_api.main:app --reload --host 127.0.0.1 --port 8000
+```
+
+Useful API routes:
+
+```text
+GET  /v1/models/ollama
+POST /v1/search
+POST /v1/chat
+POST /v1/cases/analyze
 ```
 
 Private user files must use the `private_case_*` tables and must not be mixed into public training data unless explicit consent and anonymization are implemented.

@@ -39,3 +39,25 @@ class ChatResponse(BaseModel):
     retrieved_results: list[SearchResultModel]
     error: str | None = None
 
+
+class ModelStatusResponse(BaseModel):
+    configured_model: str
+    selected_model: str | None
+    installed_models: list[str]
+    available: bool
+    base_url: str
+
+
+class CaseAnalyzeRequest(BaseModel):
+    case_text: str = Field(..., min_length=20)
+    context_limit: int = Field(default=5, ge=1, le=10)
+    use_llm: bool = True
+
+
+class CaseAnalyzeResponse(BaseModel):
+    analysis: dict[str, Any]
+    retrieved_results: list[SearchResultModel]
+    llm_note: str | None = None
+    model: str | None = None
+    model_status: str
+    error: str | None = None

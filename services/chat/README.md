@@ -15,7 +15,6 @@ question
 -> cite sources
 ```
 
-Local MVP model: `llama3.2:3b` through Ollama.
+Local MVP model target: `llama3.2:2b` through Ollama, with `llama3.2:3b` as the current installed fallback on this laptop.
 
 The chat model must not answer legal questions without retrieved source context.
-

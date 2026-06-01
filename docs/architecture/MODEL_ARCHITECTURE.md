@@ -18,7 +18,7 @@ human reviewer
 
 ## MVP Models
 
-- Chat UX: Ollama `llama3.2:3b`
+- Chat UX: Ollama `llama3.2:2b` target, with `llama3.2:3b` fallback when `2b` is not installed
 - Embeddings: `text-embedding-3-small` or local multilingual embedding model
 - Extraction: stronger hosted model or larger local model
 - Reranking: add after corpus grows
@@ -35,6 +35,8 @@ question
 -> return with citations and advocate-review warning
 ```
 
+The local model is called through `legal_db.llm.rag.LocalLegalRagPipeline`, not directly from the route handler. This keeps the model behind source retrieval and makes the same flow reusable by the citizen app, lawyer app and future chat service.
+
 ## Training Strategy
 
 Use:
@@ -44,4 +46,3 @@ Use:
 - anonymized/consented lawyer-reviewed corrections for future fine-tuning
 
 Do not train globally on private case files by default.
-

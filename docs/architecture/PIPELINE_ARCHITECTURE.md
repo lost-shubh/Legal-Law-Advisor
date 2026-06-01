@@ -43,3 +43,15 @@ user upload
 
 Private case data must not enter public model training by default.
 
+## Implemented Local Case-Text Pipeline
+
+```text
+case text
+-> legal_db.case_intake.analyzer
+-> issue tags, dates, evidence categories, missing documents
+-> staging corpus retrieval
+-> legal_db.case_intake.pipeline.CaseIntakePipeline
+-> optional Ollama note using configured local model
+```
+
+This is the current bridge between user case facts and the public legal corpus. File upload/OCR/private chunk storage still belongs in the later private case pipeline.

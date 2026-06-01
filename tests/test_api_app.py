@@ -29,3 +29,37 @@ class ApiAppTest(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertIn("results", response.json())
+
+    def test_model_status_route_is_safe_without_chat_call(self) -> None:
+        from fastapi.testclient import TestClient
+
+        from legal_api.main import app
+
+        client = TestClient(app)
+        response = client.get("/v1/models/ollama")
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertIsInstance(payload["configured_model"], str)
+        self.assertIn("available", payload)
+
+    def test_case_analyze_route_without_llm(self) -> None:
+        from fastapi.testclient import TestClient
+
+        from legal_api.main import app
+
+        client = TestClient(app)
+        response = client.post(
+            "/v1/cases/analyze",
+            json={
+                "case_text": (
+                    "Cheque was dishonoured on 12/04/2025. Legal notice was sent. "
+                    "The complainant has the bank return memo and WhatsApp messages."
+                ),
+                "context_limit": 2,
+                "use_llm": False,
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["model_status"], "skipped")
+        self.assertIn("CHEQUE_BOUNCE", payload["analysis"]["issue_tags"])

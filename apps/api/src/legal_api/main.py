@@ -1,9 +1,19 @@
 from __future__ import annotations
 
+from legal_db.case_intake.pipeline import CaseIntakePipeline
 from legal_db.llm.ollama import OllamaChatClient, OllamaSettings
+from legal_db.llm.rag import LocalLegalRagPipeline
 from legal_db.retrieval.staging import StagingRetrievalService
 
-from .schemas import ChatRequest, ChatResponse, SearchRequest, SearchResponse
+from .schemas import (
+    CaseAnalyzeRequest,
+    CaseAnalyzeResponse,
+    ChatRequest,
+    ChatResponse,
+    ModelStatusResponse,
+    SearchRequest,
+    SearchResponse,
+)
 
 
 retrieval_service = StagingRetrievalService()
@@ -30,6 +40,11 @@ try:
     def corpus_progress_route() -> dict:
         return retrieval_service.progress()
 
+    @app.get("/v1/models/ollama", response_model=ModelStatusResponse)
+    def ollama_status_route() -> ModelStatusResponse:
+        status = OllamaChatClient(OllamaSettings()).status()
+        return ModelStatusResponse(**status.to_dict())
+
     @app.post("/v1/search", response_model=SearchResponse)
     def search_route(request: SearchRequest) -> SearchResponse:
         results = retrieval_service.search(
@@ -41,38 +56,35 @@ try:
 
     @app.post("/v1/chat", response_model=ChatResponse)
     def chat_route(request: ChatRequest) -> ChatResponse:
-        context, results = retrieval_service.retrieve_context(
+        response = LocalLegalRagPipeline(retrieval_service=retrieval_service).answer(
             request.question,
-            limit=request.context_limit,
+            context_limit=request.context_limit,
+            use_llm=request.use_llm,
         )
-        result_dicts = [item.to_dict() for item in results]
-        if not request.use_llm:
-            return ChatResponse(
-                question=request.question,
-                answer=None,
-                model=None,
-                model_status="skipped",
-                retrieved_results=result_dicts,
-            )
-        settings = OllamaSettings()
-        try:
-            answer = OllamaChatClient(settings).chat(request.question, context=context)
-            return ChatResponse(
-                question=request.question,
-                answer=answer,
-                model=settings.model,
-                model_status="ok",
-                retrieved_results=result_dicts,
-            )
-        except Exception as exc:
-            return ChatResponse(
-                question=request.question,
-                answer=None,
-                model=settings.model,
-                model_status="error",
-                retrieved_results=result_dicts,
-                error=str(exc),
-            )
+        return ChatResponse(
+            question=request.question,
+            answer=response.answer,
+            model=response.model,
+            model_status=response.model_status,
+            retrieved_results=response.result_dicts(),
+            error=response.error,
+        )
+
+    @app.post("/v1/cases/analyze", response_model=CaseAnalyzeResponse)
+    def analyze_case_route(request: CaseAnalyzeRequest) -> CaseAnalyzeResponse:
+        response = CaseIntakePipeline(retrieval_service=retrieval_service).analyze(
+            request.case_text,
+            context_limit=request.context_limit,
+            use_llm=request.use_llm,
+        )
+        return CaseAnalyzeResponse(
+            analysis=response.analysis_dict(),
+            retrieved_results=response.result_dicts(),
+            llm_note=response.llm_note,
+            model=response.model,
+            model_status=response.model_status,
+            error=response.error,
+        )
 
 except ImportError:
     # FastAPI is an app runtime dependency. The pure function above keeps the

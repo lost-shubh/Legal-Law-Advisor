@@ -19,3 +19,16 @@ upload
 
 Private user files must remain separated from public training data unless explicit consent and anonymization are implemented.
 
+## Current MVP Path
+
+The API route `POST /v1/cases/analyze` implements the first version:
+
+```text
+case text
+-> deterministic issue/date/evidence detection
+-> missing document checklist
+-> related corpus retrieval
+-> optional Ollama intake note
+```
+
+Set `use_llm=false` for deterministic retrieval-only testing. Set `use_llm=true` to use the configured local Ollama model.
