@@ -91,6 +91,54 @@ CREATE TABLE IF NOT EXISTS sections (
   UNIQUE(statute_id, section_number, effective_from)
 );
 
+CREATE TABLE IF NOT EXISTS legal_provisions (
+  id BIGSERIAL PRIMARY KEY,
+  statute_id BIGINT NOT NULL REFERENCES statutes(id) ON DELETE CASCADE,
+  provision_kind TEXT NOT NULL CHECK (provision_kind IN (
+    'SECTION', 'ARTICLE', 'RULE', 'REGULATION', 'SCHEDULE', 'ORDER', 'CLAUSE'
+  )),
+  provision_number TEXT NOT NULL,
+  provision_title TEXT,
+  provision_text TEXT,
+  parent_provision_id BIGINT REFERENCES legal_provisions(id),
+  effective_from DATE,
+  effective_to DATE,
+  is_current BOOLEAN DEFAULT TRUE,
+  source_document_id BIGINT REFERENCES source_documents(id),
+  content_hash TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(statute_id, provision_kind, provision_number, effective_from)
+);
+
+CREATE TABLE IF NOT EXISTS criminal_offences (
+  id BIGSERIAL PRIMARY KEY,
+  statute_id BIGINT NOT NULL REFERENCES statutes(id),
+  section_id BIGINT REFERENCES sections(id),
+  provision_id BIGINT REFERENCES legal_provisions(id),
+  offence_code TEXT NOT NULL,
+  offence_title TEXT,
+  offence_text TEXT,
+  ingredients JSONB,
+  punishment_text TEXT,
+  imprisonment_min_months INTEGER,
+  imprisonment_max_months INTEGER,
+  fine_text TEXT,
+  cognizable_status TEXT,
+  bailable_status TEXT,
+  compoundable_status TEXT,
+  triable_by TEXT,
+  related_procedure_sections JSONB,
+  related_evidence_sections JSONB,
+  source TEXT DEFAULT 'STATUTE_EXTRACTED',
+  validation_status TEXT DEFAULT 'UNVALIDATED' CHECK (validation_status IN (
+    'UNVALIDATED', 'AUTO_VALIDATED', 'HUMAN_VALIDATED', 'REJECTED'
+  )),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(statute_id, offence_code)
+);
+
 CREATE TABLE IF NOT EXISTS gazette_notifications (
   id BIGSERIAL PRIMARY KEY,
   gazette_number TEXT,
@@ -347,6 +395,42 @@ CREATE TABLE IF NOT EXISTS private_case_analysis (
   missing_documents JSONB,
   similar_public_case_ids BIGINT[],
   model_used TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS corpus_targets (
+  id BIGSERIAL PRIMARY KEY,
+  target_code TEXT UNIQUE NOT NULL,
+  target_name TEXT NOT NULL,
+  target_type TEXT NOT NULL CHECK (target_type IN (
+    'STATUTE', 'JUDGMENT', 'CASE', 'GAZETTE', 'OFFENCE_CATALOG', 'EMBEDDING'
+  )),
+  court_level TEXT,
+  jurisdiction TEXT,
+  domain_tag TEXT,
+  target_count INTEGER NOT NULL,
+  priority INTEGER DEFAULT 100,
+  notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS collection_batches (
+  id BIGSERIAL PRIMARY KEY,
+  batch_code TEXT UNIQUE NOT NULL,
+  target_code TEXT REFERENCES corpus_targets(target_code),
+  source_code TEXT REFERENCES data_sources(source_code),
+  status TEXT NOT NULL DEFAULT 'PLANNED' CHECK (status IN (
+    'PLANNED', 'RUNNING', 'DONE', 'FAILED', 'PAUSED'
+  )),
+  planned_count INTEGER,
+  collected_count INTEGER DEFAULT 0,
+  from_date DATE,
+  to_date DATE,
+  court_codes TEXT[],
+  domain_tags TEXT[],
+  notes TEXT,
+  started_at TIMESTAMPTZ,
+  finished_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

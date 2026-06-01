@@ -66,4 +66,20 @@ Start with the public corpus:
 7. Run AI extraction with validation.
 8. Create embeddings and citation graph.
 
+## Corpus Target
+
+The production target is not the current seed corpus. The target is:
+
+- `10,000` judgments/orders with official provenance
+- `2,000` Supreme Court judgments
+- `5,000` High Court judgments
+- `3,000` District Court public judgments/orders
+- BNS offence/charge catalog, Constitution Articles, statute Sections, Rules and Regulations
+
+Track progress:
+
+```powershell
+python .\scripts\corpus_progress.py
+```
+
 Private user files must use the `private_case_*` tables and must not be mixed into public training data unless explicit consent and anonymization are implemented.

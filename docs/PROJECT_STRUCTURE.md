@@ -39,6 +39,8 @@ manifests/
 Implemented:
 
 - production PostgreSQL schema with public corpus, private case, embedding and quality tables
+- legal provision and criminal offence catalog tables for BNS/articles/rules
+- 10,000-judgment corpus target configuration and progress reporting
 - staging SQLite database workflow because Docker/WSL is blocked on local admin elevation
 - official-source statute ingestion for 16 priority Acts
 - official Supreme Court latest judgment ingestion
@@ -53,9 +55,10 @@ Not implemented yet:
 - Gazette ingestion
 - High Court ingestion
 - eCourts/district court ingestion
+- 10,000-case collection completion
+- BNS offence catalog extraction population
 - OCR confidence scoring for scanned PDFs
 - production PostgreSQL import from staging
 - embeddings generation
 - citation graph resolution
 - AI extraction batch writes
-

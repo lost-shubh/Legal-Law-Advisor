@@ -30,6 +30,16 @@ Current staging counts:
 - Supreme Court cases: 25
 - Supreme Court judgments: 25
 
+## Production Corpus Target
+
+The production judgment target is now 10,000 judgments:
+
+- 2,000 Supreme Court judgments
+- 5,000 High Court judgments
+- 3,000 District Court public judgments/orders
+
+Current judgment progress: 25 / 10,000.
+
 ## Priority Acts Loaded
 
 Official PDFs and extracted text are loaded for:
@@ -60,6 +70,7 @@ The latest 25 official Supreme Court judgment PDFs visible on the Supreme Court 
 - Gazette commencement/amendment notifications
 - High Court judgments
 - District court/eCourts data
+- BNS offence/charge catalog rows
 - OCR for scanned judgment PDFs
 - AI extraction fields
 - embeddings/vector search
@@ -74,4 +85,3 @@ The latest 25 official Supreme Court judgment PDFs visible on the Supreme Court 
 4. Apply PostgreSQL schema from `sql/`.
 5. Import staging SQLite records into PostgreSQL.
 6. Continue ingestion with Gazette, High Court, and eCourts pipelines.
-

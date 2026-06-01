@@ -20,6 +20,17 @@ VALUES
   ('HC-CAL', 'High Court at Calcutta', 'HIGH', 'West Bengal')
 ON CONFLICT (court_code) DO NOTHING;
 
+INSERT INTO corpus_targets
+  (target_code, target_name, target_type, court_level, jurisdiction, domain_tag, target_count, priority, notes)
+VALUES
+  ('STATUTES_PRIORITY_16', 'Priority Indian legal Acts with extracted provisions', 'STATUTE', NULL, 'INDIA', 'CORE_LAW', 16, 1, 'Initial core statute set for criminal, civil, family, consumer, cyber, property, labour and constitutional workflows.'),
+  ('OFFENCE_CATALOG_BNS', 'BNS offence and punishment catalog', 'OFFENCE_CATALOG', NULL, 'INDIA', 'CRIMINAL', 358, 1, 'Extract BNS sections into offence ingredients, punishments, bailable/cognizable metadata and related BNSS/BSA links.'),
+  ('JUDGMENTS_SC_2000', 'Supreme Court judgment corpus', 'JUDGMENT', 'SUPREME', 'INDIA', 'ALL', 2000, 1, 'Authoritative precedent corpus.'),
+  ('JUDGMENTS_HC_5000', 'High Court judgment corpus', 'JUDGMENT', 'HIGH', 'INDIA', 'ALL', 5000, 2, 'Priority High Courts and domains.'),
+  ('JUDGMENTS_DISTRICT_3000', 'District court disposed judgment/order corpus', 'JUDGMENT', 'DISTRICT', 'INDIA', 'ALL', 3000, 3, 'Disposed cases with public orders/judgments only.'),
+  ('JUDGMENTS_TOTAL_10000', 'Total judgment corpus target', 'JUDGMENT', NULL, 'INDIA', 'ALL', 10000, 1, 'Production-grade minimum corpus target before serious user-facing legal similarity claims.')
+ON CONFLICT (target_code) DO NOTHING;
+
 WITH india_code AS (
   SELECT id FROM data_sources WHERE source_code = 'INDIA_CODE'
 )

@@ -1,0 +1,66 @@
+{
+  "target_name": "Indian Legal Law Advisor 10k Judgment Corpus",
+  "target_judgments": 10000,
+  "minimum_before_user_facing_similarity": 10000,
+  "court_level_mix": [
+    {
+      "court_level": "SUPREME",
+      "target_count": 2000,
+      "purpose": "Binding precedent and authoritative interpretation"
+    },
+    {
+      "court_level": "HIGH",
+      "target_count": 5000,
+      "purpose": "State-level binding and persuasive precedent"
+    },
+    {
+      "court_level": "DISTRICT",
+      "target_count": 3000,
+      "purpose": "Procedural and factual pattern corpus from disposed public judgments/orders"
+    }
+  ],
+  "domain_mix": [
+    { "domain": "CRIMINAL_BAIL_TRIAL_APPEAL", "target_count": 1800 },
+    { "domain": "CHEQUE_BOUNCE_NI_138", "target_count": 900 },
+    { "domain": "FAMILY_DIVORCE_MAINTENANCE_CUSTODY", "target_count": 900 },
+    { "domain": "DOMESTIC_VIOLENCE", "target_count": 500 },
+    { "domain": "PROPERTY_CIVIL_POSSESSION_TITLE", "target_count": 900 },
+    { "domain": "CONSUMER", "target_count": 700 },
+    { "domain": "CYBER_IT_ACT", "target_count": 500 },
+    { "domain": "MOTOR_ACCIDENT_INSURANCE", "target_count": 700 },
+    { "domain": "LABOUR_EMPLOYMENT", "target_count": 600 },
+    { "domain": "CONSTITUTIONAL_WRIT", "target_count": 700 },
+    { "domain": "COMMERCIAL_CONTRACT_ARBITRATION", "target_count": 800 },
+    { "domain": "TAX_REGULATORY", "target_count": 500 }
+  ],
+  "priority_high_courts": [
+    { "court_code": "HC-DEL", "target_count": 800 },
+    { "court_code": "HC-BOM", "target_count": 800 },
+    { "court_code": "HC-MAD", "target_count": 700 },
+    { "court_code": "HC-ALL", "target_count": 900 },
+    { "court_code": "HC-KAR", "target_count": 600 },
+    { "court_code": "HC-CAL", "target_count": 500 },
+    { "court_code": "OTHER_HC", "target_count": 700 }
+  ],
+  "priority_districts": [
+    "Delhi",
+    "Mumbai City",
+    "Bengaluru Urban",
+    "Chennai",
+    "Lucknow",
+    "Pune",
+    "Hyderabad",
+    "Kolkata",
+    "Ahmedabad",
+    "Jaipur"
+  ],
+  "acceptance_criteria": {
+    "source_url_required_percent": 100,
+    "pdf_hash_required_percent": 100,
+    "clean_text_min_words": 500,
+    "clean_text_success_percent": 90,
+    "outcome_validation_sample_precision_percent": 90,
+    "section_resolution_percent": 90
+  }
+}
+

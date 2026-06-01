@@ -13,6 +13,17 @@ CREATE INDEX IF NOT EXISTS idx_sections_current ON sections(statute_id, section_
 CREATE INDEX IF NOT EXISTS idx_sections_fts ON sections
   USING GIN (to_tsvector('english', coalesce(section_text, '')));
 
+CREATE INDEX IF NOT EXISTS idx_legal_provisions_statute ON legal_provisions(statute_id);
+CREATE INDEX IF NOT EXISTS idx_legal_provisions_kind ON legal_provisions(provision_kind);
+CREATE INDEX IF NOT EXISTS idx_legal_provisions_fts ON legal_provisions
+  USING GIN (to_tsvector('english', coalesce(provision_text, '')));
+
+CREATE INDEX IF NOT EXISTS idx_criminal_offences_statute ON criminal_offences(statute_id);
+CREATE INDEX IF NOT EXISTS idx_criminal_offences_code ON criminal_offences(offence_code);
+CREATE INDEX IF NOT EXISTS idx_criminal_offences_status ON criminal_offences(cognizable_status, bailable_status);
+CREATE INDEX IF NOT EXISTS idx_criminal_offences_fts ON criminal_offences
+  USING GIN (to_tsvector('english', coalesce(offence_title, '') || ' ' || coalesce(offence_text, '') || ' ' || coalesce(punishment_text, '')));
+
 CREATE INDEX IF NOT EXISTS idx_gazette_statute ON gazette_notifications(statute_id);
 CREATE INDEX IF NOT EXISTS idx_gazette_type_date ON gazette_notifications(notification_type, notification_date);
 
@@ -53,3 +64,5 @@ CREATE INDEX IF NOT EXISTS idx_embeddings_vector_cosine ON embeddings
 CREATE INDEX IF NOT EXISTS idx_private_cases_user ON private_cases(external_user_id);
 CREATE INDEX IF NOT EXISTS idx_private_files_case ON private_case_files(private_case_id);
 
+CREATE INDEX IF NOT EXISTS idx_corpus_targets_type ON corpus_targets(target_type, court_level, domain_tag);
+CREATE INDEX IF NOT EXISTS idx_collection_batches_target ON collection_batches(target_code, status);

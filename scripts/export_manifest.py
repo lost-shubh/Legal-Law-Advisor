@@ -9,6 +9,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 DB_PATH = ROOT / "data" / "legal_corpus_staging.sqlite"
 OUT_PATH = ROOT / "manifests" / "ingestion_summary.json"
+TARGET_PATH = ROOT / "config" / "case_corpus_targets.json"
 
 
 def scalar(conn: sqlite3.Connection, sql: str) -> int:
@@ -22,19 +23,26 @@ def rows(conn: sqlite3.Connection, sql: str) -> list[dict[str, object]]:
 
 
 def build_manifest() -> dict[str, object]:
+    targets = {}
+    if TARGET_PATH.exists():
+        targets = json.loads(TARGET_PATH.read_text(encoding="utf-8"))
     if not DB_PATH.exists():
         return {
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "staging_db": str(DB_PATH),
             "status": "missing",
+            "targets": targets,
         }
 
     conn = sqlite3.connect(DB_PATH)
     try:
+        judgment_count = scalar(conn, "SELECT COUNT(*) FROM judgments")
+        target_judgments = int(targets.get("target_judgments", 0) or 0)
         return {
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "staging_db": str(DB_PATH),
             "status": "available",
+            "targets": targets,
             "counts": {
                 "data_sources": scalar(conn, "SELECT COUNT(*) FROM data_sources"),
                 "source_documents": scalar(conn, "SELECT COUNT(*) FROM source_documents"),
@@ -42,7 +50,17 @@ def build_manifest() -> dict[str, object]:
                 "sections": scalar(conn, "SELECT COUNT(*) FROM sections"),
                 "document_texts": scalar(conn, "SELECT COUNT(*) FROM document_texts"),
                 "cases": scalar(conn, "SELECT COUNT(*) FROM cases"),
-                "judgments": scalar(conn, "SELECT COUNT(*) FROM judgments"),
+                "judgments": judgment_count,
+            },
+            "progress": {
+                "target_judgments": target_judgments,
+                "current_judgments": judgment_count,
+                "remaining_judgments": max(target_judgments - judgment_count, 0)
+                if target_judgments
+                else None,
+                "judgment_progress_percent": round((judgment_count / target_judgments) * 100, 3)
+                if target_judgments
+                else None,
             },
             "priority_acts": rows(
                 conn,
@@ -89,4 +107,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
