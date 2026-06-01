@@ -1,0 +1,42 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: legaldb-postgres
+    environment:
+      POSTGRES_DB: legaldb
+      POSTGRES_USER: legal
+      POSTGRES_PASSWORD: legal
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./sql:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U legal -d legaldb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: legaldb-redis
+    ports:
+      - "6379:6379"
+
+  minio:
+    image: minio/minio:latest
+    container_name: legaldb-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: legaldb
+      MINIO_ROOT_PASSWORD: legaldbpassword
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - miniodata:/data
+
+volumes:
+  pgdata:
+  miniodata:
+

@@ -1,0 +1,321 @@
+{
+  "generated_at": "2026-06-01T07:53:23.749937+00:00",
+  "staging_db": "F:\\indian-legal-database\\data\\legal_corpus_staging.sqlite",
+  "status": "available",
+  "counts": {
+    "data_sources": 9,
+    "source_documents": 91,
+    "statutes": 16,
+    "sections": 5421,
+    "document_texts": 41,
+    "cases": 25,
+    "judgments": 25
+  },
+  "priority_acts": [
+    {
+      "short_title": "BNS",
+      "act_name": "The Bharatiya Nyaya Sanhita, 2023",
+      "year": 2023,
+      "pdf_documents": 1,
+      "max_word_count": 68005,
+      "extracted_sections": 609
+    },
+    {
+      "short_title": "BNSS",
+      "act_name": "The Bharatiya Nagarik Suraksha Sanhita, 2023",
+      "year": 2023,
+      "pdf_documents": 1,
+      "max_word_count": 127634,
+      "extracted_sections": 839
+    },
+    {
+      "short_title": "BSA",
+      "act_name": "The Bharatiya Sakshya Adhiniyam, 2023",
+      "year": 2023,
+      "pdf_documents": 1,
+      "max_word_count": 28631,
+      "extracted_sections": 288
+    },
+    {
+      "short_title": "DPDP",
+      "act_name": "The Digital Personal Data Protection Act, 2023",
+      "year": 2023,
+      "pdf_documents": 1,
+      "max_word_count": 11111,
+      "extracted_sections": 75
+    },
+    {
+      "short_title": "NI_ACT",
+      "act_name": "The Negotiable Instruments Act, 1881",
+      "year": 1881,
+      "pdf_documents": 1,
+      "max_word_count": 17313,
+      "extracted_sections": 222
+    },
+    {
+      "short_title": "IT_ACT",
+      "act_name": "The Information Technology Act, 2000",
+      "year": 2000,
+      "pdf_documents": 1,
+      "max_word_count": 19525,
+      "extracted_sections": 207
+    },
+    {
+      "short_title": "CONSUMER",
+      "act_name": "The Consumer Protection Act, 2019",
+      "year": 2019,
+      "pdf_documents": 1,
+      "max_word_count": 45693,
+      "extracted_sections": 108
+    },
+    {
+      "short_title": "HMA",
+      "act_name": "The Hindu Marriage Act, 1955",
+      "year": 1955,
+      "pdf_documents": 1,
+      "max_word_count": 7716,
+      "extracted_sections": 42
+    },
+    {
+      "short_title": "DV_ACT",
+      "act_name": "The Protection of Women from Domestic Violence Act, 2005",
+      "year": 2005,
+      "pdf_documents": 1,
+      "max_word_count": 6193,
+      "extracted_sections": 62
+    },
+    {
+      "short_title": "TPA",
+      "act_name": "The Transfer of Property Act, 1882",
+      "year": 1882,
+      "pdf_documents": 1,
+      "max_word_count": 26739,
+      "extracted_sections": 118
+    },
+    {
+      "short_title": "CONSTITUTION",
+      "act_name": "The Constitution of India",
+      "year": 1950,
+      "pdf_documents": 1,
+      "max_word_count": 89053,
+      "extracted_sections": 396
+    },
+    {
+      "short_title": "MV_ACT",
+      "act_name": "The Motor Vehicles Act, 1988",
+      "year": 1988,
+      "pdf_documents": 1,
+      "max_word_count": 62043,
+      "extracted_sections": 469
+    },
+    {
+      "short_title": "ID_ACT",
+      "act_name": "The Industrial Disputes Act, 1947",
+      "year": 1947,
+      "pdf_documents": 1,
+      "max_word_count": 26180,
+      "extracted_sections": 68
+    },
+    {
+      "short_title": "IPC",
+      "act_name": "The Indian Penal Code, 1860",
+      "year": 1860,
+      "pdf_documents": 1,
+      "max_word_count": 72395,
+      "extracted_sections": 926
+    },
+    {
+      "short_title": "CRPC",
+      "act_name": "The Code of Criminal Procedure, 1973",
+      "year": 1973,
+      "pdf_documents": 1,
+      "max_word_count": 142422,
+      "extracted_sections": 816
+    },
+    {
+      "short_title": "EVIDENCE",
+      "act_name": "The Indian Evidence Act, 1872",
+      "year": 1872,
+      "pdf_documents": 1,
+      "max_word_count": 31181,
+      "extracted_sections": 176
+    }
+  ],
+  "latest_supreme_court_cases": [
+    {
+      "title": "SANJAY DAVE VS. ANDHRA BANK LTD.",
+      "case_number": "C.A. No. 12264-12266/2024",
+      "diary_no": "517222024",
+      "decision_date": "2026-05-27",
+      "source_url": "https://www.sci.gov.in/view-pdf/?diary_no=517222024&type=j&order_date=2026-05-27&from=latest_judgements_order"
+    },
+    {
+      "title": "THE STATE OF TAMIL NADU VS. JUNGLEE GAMES INDIA PRIVATE LIMITED",
+      "case_number": "C.A. No. 6124-6131/2023",
+      "diary_no": "277062021",
+      "decision_date": "2026-05-27",
+      "source_url": "https://www.sci.gov.in/view-pdf/?diary_no=277062021&type=j&order_date=2026-05-27&from=latest_judgements_order"
+    },
+    {
+      "title": "DIRECTORATE GENERAL OF GOODS AND SERVICES TAX INTELLIGENCE (HQS) VS. GAMESKRAFT TECHNOLOGIES PRIVATE LIMITED",
+      "case_number": "C.A. No. 8241-8244/2026",
+      "diary_no": "307972023",
+      "decision_date": "2026-05-27",
+      "source_url": "https://www.sci.gov.in/view-pdf/?diary_no=307972023&type=j&order_date=2026-05-27&from=latest_judgements_order"
+    },
+    {
+      "title": "THE STATE OF MAHARASHTRA VS. RAHUL DATTA BHOSALE",
+      "case_number": "Crl.A. No. 2926/2026",
+      "diary_no": "7932026",
+      "decision_date": "2026-05-27",
+      "source_url": "https://www.sci.gov.in/view-pdf/?diary_no=7932026&type=j&order_date=2026-05-27&from=latest_judgements_order"
+    },
+    {
+      "title": "M/S ALUPRO BUILDING SYSTEMS PVT. LTD. VS. COMMISSIONER OF CENTRAL EXCISE BANGALORE II",
+      "case_number": "C.A. No. 8030/2010",
+      "diary_no": "245112010",
+      "decision_date": "2026-05-27",
+      "source_url": "https://www.sci.gov.in/view-pdf/?diary_no=245112010&type=j&order_date=2026-05-27&from=latest_judgements_order"
+    },
+    {
+      "title": "RELIANCE INDUSTRIES LIMITED VS. THE SECURITIES AND EXCHANGE BOARD OF INDIA",
+      "case_number": "C.A. No. 4015/2020",
+      "diary_no": "268252020",
+      "decision_date": "2026-05-29",
+      "source_url": "https://www.sci.gov.in/view-pdf/?diary_no=268252020&type=j&order_date=2026-05-29&from=latest_judgements_order"
+    },
+    {
+      "title": "ISHWAR CHAND SHARMA VS. STATE OF U.P.",
+      "case_number": "Crl.A. No. 3001/2026",
+      "diary_no": "625712025",
+      "decision_date": "2026-05-29",
+      "source_url": "https://www.sci.gov.in/view-pdf/?diary_no=625712025&type=j&order_date=2026-05-29&from=latest_judgements_order"
+    },
+    {
+      "title": "VIJAY KUMAR KELA VS. CENTRAL BUREAU OF INVESTIGATION",
+      "case_number": "Crl.A. No. 2974/2026",
+      "diary_no": "544732024",
+      "decision_date": "2026-05-29",
+      "source_url": "https://www.sci.gov.in/view-pdf/?diary_no=544732024&type=j&order_date=2026-05-29&from=latest_judgements_order"
+    },
+    {
+      "title": "GENERAL MANAGER, BANK OF BARODA VS. ASHOK KUMAR SINGH .",
+      "case_number": "C.A. No. 4814/2017",
+      "diary_no": "411672015",
+      "decision_date": "2026-05-29",
+      "source_url": "https://www.sci.gov.in/view-pdf/?diary_no=411672015&type=j&order_date=2026-05-29&from=latest_judgements_order"
+    },
+    {
+      "title": "MADHYA PRADESH ROAD DEVELOPMENT CORPORATION LTD. MANAGING DIRECTOR VS. M/S JABALPUR CORRIDOR PVT. LTD. MANAGING DIRECTOR",
+      "case_number": "C.A. No. 10877/2018",
+      "diary_no": "13892017",
+      "decision_date": "2026-05-29",
+      "source_url": "https://www.sci.gov.in/view-pdf/?diary_no=13892017&type=j&order_date=2026-05-29&from=latest_judgements_order"
+    },
+    {
+      "title": "ASHOK VS. PADAM CHAND",
+      "case_number": "C.A. No. 8264/2026",
+      "diary_no": "219642025",
+      "decision_date": "2026-05-29",
+      "source_url": "https://www.sci.gov.in/view-pdf/?diary_no=219642025&type=j&order_date=2026-05-29&from=latest_judgements_order"
+    },
+    {
+      "title": "GOPALA AGRI FARMS PVT. LTD. VS. THE STATE OF HARYANA",
+      "case_number": "C.A. No. 8271/2026",
+      "diary_no": "603762024",
+      "decision_date": "2026-05-29",
+      "source_url": "https://www.sci.gov.in/view-pdf/?diary_no=603762024&type=j&order_date=2026-05-29&from=latest_judgements_order"
+    },
+    {
+      "title": "STATE OF U.P VS. ANJUMAN ISHAAT-E-TALEEM TRUST",
+      "case_number": null,
+      "diary_no": "534342025",
+      "decision_date": "2026-05-29",
+      "source_url": "https://www.sci.gov.in/view-pdf/?diary_no=534342025&type=j&order_date=2026-05-29&from=latest_judgements_order"
+    },
+    {
+      "title": "GOPI CHAND @ PAPPU VS. STATE (NCT OF DELHI)",
+      "case_number": "Crl.A. No. 847/2014",
+      "diary_no": "355012013",
+      "decision_date": "2026-05-29",
+      "source_url": "https://www.sci.gov.in/view-pdf/?diary_no=355012013&type=j&order_date=2026-05-29&from=latest_judgements_order"
+    },
+    {
+      "title": "DHIRAJ DUTTA VS. ANIRBAN SEN",
+      "case_number": "C.A. No. 8280/2026",
+      "diary_no": "4772026",
+      "decision_date": "2026-05-29",
+      "source_url": "https://www.sci.gov.in/view-pdf/?diary_no=4772026&type=j&order_date=2026-05-29&from=latest_judgements_order"
+    },
+    {
+      "title": "STATE OF U.P. VS. RAGHVENDRA NATH SRIVASTAVA",
+      "case_number": "C.A. No. 8273-8274/2026",
+      "diary_no": "687172025",
+      "decision_date": "2026-05-29",
+      "source_url": "https://www.sci.gov.in/view-pdf/?diary_no=687172025&type=j&order_date=2026-05-29&from=latest_judgements_order"
+    },
+    {
+      "title": "CHATURBHUJ PRADHAN VS. AMAR PRADHAN",
+      "case_number": "C.A. No. 8272/2026",
+      "diary_no": "508402025",
+      "decision_date": "2026-05-29",
+      "source_url": "https://www.sci.gov.in/view-pdf/?diary_no=508402025&type=j&order_date=2026-05-29&from=latest_judgements_order"
+    },
+    {
+      "title": "DAUDAYAL VS. THE STATE OF RAJASTHAN",
+      "case_number": "Crl.A. No. 2973/2026",
+      "diary_no": "121262025",
+      "decision_date": "2026-05-29",
+      "source_url": "https://www.sci.gov.in/view-pdf/?diary_no=121262025&type=j&order_date=2026-05-29&from=latest_judgements_order"
+    },
+    {
+      "title": "ARJUN DASS VS. THE STATE OF ANDHRA PRADESH",
+      "case_number": "C.A. No. 8268/2026",
+      "diary_no": "594222025",
+      "decision_date": "2026-05-29",
+      "source_url": "https://www.sci.gov.in/view-pdf/?diary_no=594222025&type=j&order_date=2026-05-29&from=latest_judgements_order"
+    },
+    {
+      "title": "PUSHPA VS. DAYAWATI",
+      "case_number": "C.A. No. 8267/2026",
+      "diary_no": "263042019",
+      "decision_date": "2026-05-29",
+      "source_url": "https://www.sci.gov.in/view-pdf/?diary_no=263042019&type=j&order_date=2026-05-29&from=latest_judgements_order"
+    },
+    {
+      "title": "PILA PAHAN@ PEELA PAHAN VS. THE STATE OF JHARKHAND",
+      "case_number": "W.P.(Crl.) No. 169/2025",
+      "diary_no": "184652025",
+      "decision_date": "2026-05-29",
+      "source_url": "https://www.sci.gov.in/view-pdf/?diary_no=184652025&type=j&order_date=2026-05-29&from=latest_judgements_order"
+    },
+    {
+      "title": "A JOHN KENNEDY VS. STATE OF TAMIL NADU",
+      "case_number": "C.A. No. 6395-6397/2025",
+      "diary_no": "5312025",
+      "decision_date": "2026-05-29",
+      "source_url": "https://www.sci.gov.in/view-pdf/?diary_no=5312025&type=j&order_date=2026-05-29&from=latest_judgements_order"
+    },
+    {
+      "title": "M/S.SHRI AGARWAL CONSTRUCTION COMPANY VS. THE REGISTRAR GENERAL",
+      "case_number": "SLP(C) No. 27738/2025",
+      "diary_no": "553022025",
+      "decision_date": "2026-05-29",
+      "source_url": "https://www.sci.gov.in/view-pdf/?diary_no=553022025&type=j&order_date=2026-05-29&from=latest_judgements_order"
+    },
+    {
+      "title": "BIHAR STATE ARDH SARKARI ARAJPATI KARAMCHARI MAHA SANGH VS. STATE OF BIHAR",
+      "case_number": "W.P.(C) No. 932/2022",
+      "diary_no": "276532022",
+      "decision_date": "2026-05-29",
+      "source_url": "https://www.sci.gov.in/view-pdf/?diary_no=276532022&type=j&order_date=2026-05-29&from=latest_judgements_order"
+    },
+    {
+      "title": "PRAJWALA VS. UNION OF INDIA .",
+      "case_number": "MA 530/2022 in W.P.(C) No. 56/2004",
+      "diary_no": "79802022",
+      "decision_date": "2026-05-29",
+      "source_url": "https://www.sci.gov.in/view-pdf/?diary_no=79802022&type=j&order_date=2026-05-29&from=latest_judgements_order"
+    }
+  ]
+}

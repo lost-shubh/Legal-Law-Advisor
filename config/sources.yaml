@@ -1,0 +1,104 @@
+sources:
+  india_code:
+    source_code: INDIA_CODE
+    official: true
+    base_url: https://www.indiacode.nic.in/
+    purpose: Central and State Acts, section text, amendment references.
+    first_targets:
+      - Bharatiya Nyaya Sanhita, 2023
+      - Bharatiya Nagarik Suraksha Sanhita, 2023
+      - Bharatiya Sakshya Adhiniyam, 2023
+      - Indian Penal Code, 1860
+      - Code of Criminal Procedure, 1973
+      - Indian Evidence Act, 1872
+      - Negotiable Instruments Act, 1881
+      - Information Technology Act, 2000
+      - Consumer Protection Act, 2019
+      - Hindu Marriage Act, 1955
+      - Protection of Women from Domestic Violence Act, 2005
+      - Transfer of Property Act, 1882
+      - Constitution of India
+      - Motor Vehicles Act, 1988
+      - Industrial Disputes Act, 1947
+    storage_tables:
+      - statutes
+      - sections
+      - source_documents
+
+  egazette:
+    source_code: EGAZETTE
+    official: true
+    base_url: https://egazette.gov.in/
+    purpose: Commencement notifications, amendments, repeals, rules and regulations.
+    priority_ministries:
+      - Ministry of Law and Justice
+      - Ministry of Home Affairs
+      - Ministry of Electronics and Information Technology
+      - Ministry of Consumer Affairs
+      - Ministry of Labour and Employment
+      - Ministry of Women and Child Development
+    storage_tables:
+      - gazette_notifications
+      - source_documents
+
+  supreme_court:
+    source_code: ESCR
+    official: true
+    base_url: https://scr.sci.gov.in/scrsearch/
+    purpose: Supreme Court judgments, neutral citations, coram and authoritative precedent.
+    priority_years:
+      - 2020
+      - 2021
+      - 2022
+      - 2023
+      - 2024
+      - 2025
+      - 2026
+    storage_tables:
+      - cases
+      - judgments
+      - case_citations
+      - citations
+
+  high_courts:
+    source_code: DOJ_JUDGMENTS
+    official: true
+    base_url: https://doj.gov.in/judgment-search-portal/
+    purpose: High Court judgments and final orders where available through official search.
+    priority_courts:
+      - HC-DEL
+      - HC-BOM
+      - HC-MAD
+      - HC-ALL
+      - HC-KAR
+      - HC-CAL
+    storage_tables:
+      - courts
+      - cases
+      - judgments
+
+  ecourts:
+    source_code: ECOURTS
+    official: true
+    base_url: https://services.ecourts.gov.in/ecourtindia_v6/
+    purpose: District court case metadata, public orders and judgments.
+    restrictions:
+      - Do not bypass CAPTCHA or access controls.
+      - Prefer CNR based lookup and publicly downloadable orders.
+      - Do not assume pleadings, FIRs, witness statements or evidence bundles are available.
+    priority_districts:
+      - Delhi
+      - Mumbai City
+      - Bengaluru Urban
+      - Chennai
+      - Lucknow
+      - Pune
+      - Hyderabad
+      - Kolkata
+      - Ahmedabad
+      - Jaipur
+    storage_tables:
+      - courts
+      - cases
+      - judgments
+
