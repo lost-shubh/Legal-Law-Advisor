@@ -94,4 +94,11 @@ Local chatbot prototype:
 python .\scripts\chat_local.py "What is the basic structure of Indian courts?"
 ```
 
+API vertical slice:
+
+```powershell
+$env:PYTHONPATH="F:\indian-legal-database;F:\indian-legal-database\apps\api\src"
+uvicorn legal_api.main:app --reload --host 127.0.0.1 --port 8000
+```
+
 Private user files must use the `private_case_*` tables and must not be mixed into public training data unless explicit consent and anonymization are implemented.
