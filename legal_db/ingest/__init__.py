@@ -3,4 +3,7 @@
 from legal_db.ingest.jobs import IngestionJobTracker
 from legal_db.ingest.judgments import JudgmentManifestIngestionPipeline
 
-__all__ = ["IngestionJobTracker", "JudgmentManifestIngestionPipeline"]
+__all__ = [
+    "IngestionJobTracker",
+    "JudgmentManifestIngestionPipeline",
+]

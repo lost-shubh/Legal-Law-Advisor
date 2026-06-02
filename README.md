@@ -91,6 +91,7 @@ python .\scripts\corpus_progress.py
 Ingest judgment PDFs from a manifest:
 
 ```powershell
+python .\scripts\generate_sc_manifest.py --html .\data\source_exports\scr_results.html --output .\data\manifests\sc_escr_manifest.local.json
 python .\scripts\ingest_judgments.py --init-template .\data\judgment_manifest.local.json
 python .\scripts\ingest_judgments.py .\data\judgment_manifest.local.json --limit 10
 python .\scripts\ingest_judgments.py --status

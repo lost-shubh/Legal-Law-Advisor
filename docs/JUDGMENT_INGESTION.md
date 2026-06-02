@@ -93,13 +93,50 @@ GET /v1/ingestion/status
 
 The API returns job counts, item counts, and the 10 most recent ingestion jobs.
 
+## Supreme Court/e-SCR Manifest Generator
+
+The Supreme Court SCR portal is official, but its public search UI is dynamic and CAPTCHA-protected. For the MVP, use it to locate official result pages/PDFs, then generate a manifest from saved result HTML or directly accessible result pages.
+
+Generate from saved HTML:
+
+```powershell
+python .\scripts\generate_sc_manifest.py `
+  --html .\data\source_exports\scr_results_section_138.html `
+  --output .\data\manifests\sc_escr_manifest.local.json `
+  --limit 50
+```
+
+Generate from result URLs:
+
+```powershell
+python .\scripts\generate_sc_manifest.py `
+  --url "https://scr.sci.gov.in/scrsearch/" `
+  --output .\data\manifests\sc_escr_manifest.local.json
+```
+
+Then ingest the generated manifest:
+
+```powershell
+python .\scripts\ingest_judgments.py .\data\manifests\sc_escr_manifest.local.json --limit 25
+```
+
+The generator extracts:
+
+- title
+- Supreme Court court code
+- source code `ESCR`
+- neutral citation, for example `2025 INSC 77`
+- case number where present
+- judgment date where present
+- official PDF URL
+- source-page context metadata
+
 ## Next Source-Specific Scrapers
 
 Build these after the manifest path is stable:
 
-1. Supreme Court/e-SCR result-list parser.
-2. Delhi High Court official judgment parser.
-3. Bombay High Court official judgment parser.
-4. DOJ judgment search portal parser.
+1. Delhi High Court official judgment parser.
+2. Bombay High Court official judgment parser.
+3. DOJ judgment search portal parser.
 
 Each scraper should output the same manifest item shape before inserting anything. That keeps source parsing separate from storage, hashing, text extraction, and status tracking.
