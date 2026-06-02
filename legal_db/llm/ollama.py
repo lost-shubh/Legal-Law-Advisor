@@ -17,8 +17,8 @@ If the context is insufficient, say what information is missing."""
 @dataclass(frozen=True)
 class OllamaSettings:
     base_url: str = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-    model: str = os.getenv("OLLAMA_MODEL", "llama3.2:2b")
-    fallback_models: str = os.getenv("OLLAMA_FALLBACK_MODELS", "llama3.2:3b,llama3.2:1b")
+    model: str = os.getenv("OLLAMA_MODEL", "llama3.2:3b")
+    fallback_models: str = os.getenv("OLLAMA_FALLBACK_MODELS", "llama3.2:1b")
     timeout_seconds: int = int(os.getenv("OLLAMA_TIMEOUT_SECONDS", "300"))
     max_answer_tokens: int = int(os.getenv("OLLAMA_MAX_ANSWER_TOKENS", "350"))
     context_window: int = int(os.getenv("OLLAMA_CONTEXT_WINDOW", "4096"))

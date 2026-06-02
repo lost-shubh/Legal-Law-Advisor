@@ -21,7 +21,8 @@ Completed so far:
 - Legal books/materials ingestion with chapters and chunks, currently `3` materials, `26` chapters and `332` chunks in staging.
 - FastAPI vertical slice with search, chat, corpus progress, ingestion status, Ollama status and case analysis routes.
 - Retrieval MVP over statutes, books and judgment text.
-- Local Ollama integration with configured `llama3.2:2b` preference and `llama3.2:3b` fallback.
+- Local Ollama integration with configured `llama3.2:3b` default and `llama3.2:1b` fallback.
+- Chat readiness status that checks both the selected Ollama model and legal corpus availability.
 - Case analyzer MVP that detects issue tags, dates, evidence categories, missing documents, urgency warnings and related legal context.
 - Judgment ingestion tracking with job/item status, manifest ingestion, PDF hashing, raw PDF storage path, case/judgment inserts and optional text extraction.
 - Supreme Court/e-SCR manifest generator that parses saved SCR/e-SCR result HTML or accessible result pages into standard judgment manifests.
@@ -36,7 +37,8 @@ Cases/Judgments:   25
 Legal materials:   3
 Book chapters:     26
 Book chunks:       332
-Test suite:        17 passing tests
+Document texts:    44
+Test suite:        18 passing tests
 ```
 
 Main work still left:
@@ -149,6 +151,7 @@ Check the local Ollama model selection:
 
 ```powershell
 python .\scripts\ollama_status.py
+python .\scripts\chatbot_status.py
 ```
 
 API vertical slice:
@@ -163,6 +166,7 @@ Useful API routes:
 ```text
 GET  /v1/ingestion/status
 GET  /v1/models/ollama
+GET  /v1/chat/status
 POST /v1/search
 POST /v1/chat
 POST /v1/cases/analyze

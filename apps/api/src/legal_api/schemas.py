@@ -40,6 +40,13 @@ class ChatResponse(BaseModel):
     error: str | None = None
 
 
+class ChatStatusResponse(BaseModel):
+    ready: bool
+    model: dict[str, Any]
+    corpus: dict[str, Any]
+    reason: str | None = None
+
+
 class ModelStatusResponse(BaseModel):
     configured_model: str
     selected_model: str | None

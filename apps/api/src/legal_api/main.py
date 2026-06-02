@@ -11,6 +11,7 @@ from .schemas import (
     CaseAnalyzeResponse,
     ChatRequest,
     ChatResponse,
+    ChatStatusResponse,
     IngestionStatusResponse,
     ModelStatusResponse,
     SearchRequest,
@@ -51,6 +52,11 @@ try:
     def ollama_status_route() -> ModelStatusResponse:
         status = OllamaChatClient(OllamaSettings()).status()
         return ModelStatusResponse(**status.to_dict())
+
+    @app.get("/v1/chat/status", response_model=ChatStatusResponse)
+    def chat_status_route() -> ChatStatusResponse:
+        readiness = LocalLegalRagPipeline(retrieval_service=retrieval_service).readiness()
+        return ChatStatusResponse(**readiness.to_dict())
 
     @app.post("/v1/search", response_model=SearchResponse)
     def search_route(request: SearchRequest) -> SearchResponse:

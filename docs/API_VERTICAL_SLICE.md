@@ -16,6 +16,7 @@ GET  /health
 GET  /v1/corpus/progress
 GET  /v1/ingestion/status
 GET  /v1/models/ollama
+GET  /v1/chat/status
 POST /v1/search
 POST /v1/chat
 POST /v1/cases/analyze
@@ -51,7 +52,7 @@ Returns ingestion job totals, item status totals, and recent jobs. This powers t
 }
 ```
 
-The chat route retrieves legal context first. If `use_llm` is true, it calls Ollama using `OLLAMA_MODEL`, currently defaulted to `llama3.2:2b`, with configured fallbacks.
+The chat route retrieves legal context first. If `use_llm` is true, it calls Ollama using `OLLAMA_MODEL`, currently defaulted to `llama3.2:3b`, with configured fallbacks.
 
 Set `use_llm` to false to test retrieval without waiting for the local model.
 
@@ -67,7 +68,24 @@ The API exposes the same check:
 GET /v1/models/ollama
 ```
 
-The project is configured to prefer `llama3.2:2b`. If it is not installed, it checks `OLLAMA_FALLBACK_MODELS`, currently `llama3.2:3b,llama3.2:1b`.
+The project is configured to prefer `llama3.2:3b`, which is the installed local Ollama model observed on this machine. If it is unavailable, it checks `OLLAMA_FALLBACK_MODELS`, currently `llama3.2:1b`.
+
+## Chat Readiness
+
+```text
+GET /v1/chat/status
+```
+
+Returns whether the built-in chatbot is ready by checking both:
+
+- installed/resolved Ollama model
+- legal corpus staging database availability and searchable corpus counts
+
+CLI equivalent:
+
+```powershell
+python .\scripts\chatbot_status.py
+```
 
 ## Case Analysis
 

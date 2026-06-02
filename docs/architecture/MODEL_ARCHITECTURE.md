@@ -18,7 +18,7 @@ human reviewer
 
 ## MVP Models
 
-- Chat UX: Ollama `llama3.2:2b` target, with `llama3.2:3b` fallback when `2b` is not installed
+- Chat UX: Ollama `llama3.2:3b` default, with `llama3.2:1b` fallback for lower-memory machines
 - Embeddings: `text-embedding-3-small` or local multilingual embedding model
 - Extraction: stronger hosted model or larger local model
 - Reranking: add after corpus grows

@@ -31,7 +31,7 @@ On this machine, Ollama is installed. The latest local check showed this install
 llama3.2:3b
 ```
 
-The project is now configured to prefer `llama3.2:2b` because that is the target local chatbot model requested for the product. If `llama3.2:2b` is not installed, the API automatically falls back to installed models listed in `OLLAMA_FALLBACK_MODELS`, currently `llama3.2:3b,llama3.2:1b`.
+The project is configured to prefer `llama3.2:3b` because that is the local model actually installed on this machine. The earlier `llama3.2:2b` target is not a valid/available Ollama tag in this environment. If `llama3.2:3b` cannot be loaded, the API checks installed fallback models listed in `OLLAMA_FALLBACK_MODELS`, currently `llama3.2:1b`.
 
 The repository includes a prototype local chat command:
 
@@ -55,14 +55,21 @@ It is not suitable by itself for:
 - drafting court filings without review
 - extracting complex judgment ratios at scale
 
-## About `llama3.2:2b`
+## Llama Version Conflict Resolution
 
-The local Ollama installation currently shows `llama3.2:3b`, not `llama3.2:2b`. The integration is configurable through:
+GitHub issue #1 reported that the Llama model pipeline was not syncing properly with the main legal database for the built-in chatbot. The fix is:
+
+- default to the installed model: `llama3.2:3b`
+- keep a smaller fallback: `llama3.2:1b`
+- expose combined chat readiness through `GET /v1/chat/status`
+- keep the chatbot retrieval-first through `LocalLegalRagPipeline`
+
+The integration is configurable through:
 
 ```text
 OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_MODEL=llama3.2:2b
-OLLAMA_FALLBACK_MODELS=llama3.2:3b,llama3.2:1b
+OLLAMA_MODEL=llama3.2:3b
+OLLAMA_FALLBACK_MODELS=llama3.2:1b
 OLLAMA_TIMEOUT_SECONDS=300
 OLLAMA_MAX_ANSWER_TOKENS=350
 OLLAMA_CONTEXT_WINDOW=4096
@@ -75,7 +82,17 @@ Check what the API will use:
 python .\scripts\ollama_status.py
 ```
 
-If `llama3.2:2b` is installed later, the API will select it automatically when `OLLAMA_MODEL=llama3.2:2b`.
+Check whether the chatbot is ready to answer from the legal corpus:
+
+```text
+GET /v1/chat/status
+```
+
+CLI equivalent:
+
+```powershell
+python .\scripts\chatbot_status.py
+```
 
 ## Local Model Usage Pattern
 

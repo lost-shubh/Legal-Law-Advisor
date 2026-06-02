@@ -20,6 +20,22 @@ class RagResponse:
         return [item.to_dict() for item in self.retrieved_results]
 
 
+@dataclass(frozen=True)
+class ChatReadiness:
+    ready: bool
+    model: dict[str, Any]
+    corpus: dict[str, Any]
+    reason: str | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "ready": self.ready,
+            "model": self.model,
+            "corpus": self.corpus,
+            "reason": self.reason,
+        }
+
+
 class LocalLegalRagPipeline:
     """Retrieval-first answer generation over the local staging corpus."""
 
@@ -62,3 +78,39 @@ class LocalLegalRagPipeline:
                 retrieved_results=results,
                 error=str(exc),
             )
+
+    def readiness(self) -> ChatReadiness:
+        model_status = OllamaChatClient(self.settings).status().to_dict()
+        corpus = self.retrieval_service.progress()
+        database_available = bool(corpus.get("database_available"))
+        searchable_count = sum(
+            int(corpus.get(key, 0) or 0)
+            for key in ["sections", "book_chunks", "current_judgments"]
+        )
+        if not model_status["available"]:
+            return ChatReadiness(
+                ready=False,
+                model=model_status,
+                corpus=corpus,
+                reason="No configured Ollama model is available.",
+            )
+        if not database_available:
+            return ChatReadiness(
+                ready=False,
+                model=model_status,
+                corpus=corpus,
+                reason="The legal corpus staging database is not available.",
+            )
+        if searchable_count <= 0:
+            return ChatReadiness(
+                ready=False,
+                model=model_status,
+                corpus=corpus,
+                reason="The legal corpus has no searchable sections, books or judgments.",
+            )
+        return ChatReadiness(
+            ready=True,
+            model=model_status,
+            corpus=corpus,
+            reason=None,
+        )

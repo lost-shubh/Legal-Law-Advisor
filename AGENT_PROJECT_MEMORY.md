@@ -14,7 +14,7 @@ Use this file before continuing project work. Do not repeatedly rediscover the s
 
 - Repo: `https://github.com/lost-shubh/Legal-Law-Advisor.git`
 - Branch: `main`
-- Latest recorded pushed commit before e-SCR generator slice: `27b9ef4 Add judgment ingestion tracking pipeline`
+- Latest recorded pushed commit before issue #1 fix: `99cd2e3 Document current project build status`
 - Local staging DB: `data/legal_corpus_staging.sqlite` is ignored.
 - Current staging corpus:
   - 16 statutes
@@ -23,6 +23,7 @@ Use this file before continuing project work. Do not repeatedly rediscover the s
   - 3 legal books/materials
   - 26 book chapters
   - 332 book chunks
+  - 44 document_texts
 
 ## Built So Far
 
@@ -56,15 +57,19 @@ Use this file before continuing project work. Do not repeatedly rediscover the s
   - `GET /v1/corpus/progress`
   - `GET /v1/ingestion/status`
   - `GET /v1/models/ollama`
+  - `GET /v1/chat/status`
   - `POST /v1/search`
   - `POST /v1/chat`
   - `POST /v1/cases/analyze`
 
 - Local Ollama integration:
-  - preferred model: `llama3.2:2b`
-  - fallback: `llama3.2:3b`
+  - preferred/default model: `llama3.2:3b`
+  - fallback: `llama3.2:1b`
   - actual installed model observed: `llama3.2:3b`
   - `llama3.2:2b` was not available as an Ollama tag
+  - GitHub issue #1 "Lama version conflict" fixed by aligning defaults to installed `llama3.2:3b`
+  - chatbot readiness exposed through `GET /v1/chat/status`
+  - CLI readiness helper: `scripts/chatbot_status.py`
 
 - Case analyzer MVP:
   - issue tags
@@ -97,7 +102,7 @@ python -m compileall apps legal_db scripts tests
 python -m unittest discover -s tests -v
 ```
 
-Last known test count: 17 passing.
+Last known test count: 18 passing.
 
 ## Next Build Slice
 

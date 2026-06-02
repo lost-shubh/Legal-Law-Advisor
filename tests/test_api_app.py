@@ -42,6 +42,19 @@ class ApiAppTest(unittest.TestCase):
         self.assertIsInstance(payload["configured_model"], str)
         self.assertIn("available", payload)
 
+    def test_chat_status_route_reports_model_and_corpus(self) -> None:
+        from fastapi.testclient import TestClient
+
+        from legal_api.main import app
+
+        client = TestClient(app)
+        response = client.get("/v1/chat/status")
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertIn("ready", payload)
+        self.assertIn("model", payload)
+        self.assertIn("corpus", payload)
+
     def test_ingestion_status_route_is_available(self) -> None:
         from fastapi.testclient import TestClient
 
