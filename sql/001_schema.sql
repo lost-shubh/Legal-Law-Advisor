@@ -479,6 +479,47 @@ CREATE TABLE IF NOT EXISTS collection_batches (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS ingestion_jobs (
+  id BIGSERIAL PRIMARY KEY,
+  job_code TEXT UNIQUE NOT NULL,
+  job_type TEXT NOT NULL,
+  source_code TEXT REFERENCES data_sources(source_code),
+  source_url TEXT,
+  status TEXT NOT NULL CHECK (status IN (
+    'PENDING', 'RUNNING', 'DONE', 'FAILED', 'PAUSED', 'SKIPPED'
+  )),
+  target_count INTEGER DEFAULT 0,
+  processed_count INTEGER DEFAULT 0,
+  success_count INTEGER DEFAULT 0,
+  failed_count INTEGER DEFAULT 0,
+  skipped_count INTEGER DEFAULT 0,
+  metadata JSONB,
+  error_msg TEXT,
+  started_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  finished_at TIMESTAMPTZ
+);
+
+CREATE TABLE IF NOT EXISTS ingestion_items (
+  id BIGSERIAL PRIMARY KEY,
+  job_id BIGINT NOT NULL REFERENCES ingestion_jobs(id) ON DELETE CASCADE,
+  item_key TEXT NOT NULL,
+  item_type TEXT NOT NULL,
+  source_url TEXT,
+  status TEXT NOT NULL CHECK (status IN (
+    'PENDING', 'RUNNING', 'DONE', 'FAILED', 'SKIPPED', 'DUPLICATE'
+  )),
+  local_path TEXT,
+  s3_key TEXT,
+  content_hash TEXT,
+  source_document_id BIGINT REFERENCES source_documents(id),
+  metadata JSONB,
+  error_msg TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(job_id, item_key)
+);
+
 CREATE TABLE IF NOT EXISTS quality_metrics (
   id BIGSERIAL PRIMARY KEY,
   metric_name TEXT NOT NULL,

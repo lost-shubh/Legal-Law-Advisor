@@ -42,6 +42,19 @@ class ApiAppTest(unittest.TestCase):
         self.assertIsInstance(payload["configured_model"], str)
         self.assertIn("available", payload)
 
+    def test_ingestion_status_route_is_available(self) -> None:
+        from fastapi.testclient import TestClient
+
+        from legal_api.main import app
+
+        client = TestClient(app)
+        response = client.get("/v1/ingestion/status")
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertIn("jobs", payload)
+        self.assertIn("items", payload)
+        self.assertIn("recent_jobs", payload)
+
     def test_case_analyze_route_without_llm(self) -> None:
         from fastapi.testclient import TestClient
 

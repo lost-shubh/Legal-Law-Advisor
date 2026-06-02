@@ -48,6 +48,13 @@ class ModelStatusResponse(BaseModel):
     base_url: str
 
 
+class IngestionStatusResponse(BaseModel):
+    database_available: bool
+    jobs: dict[str, Any]
+    items: dict[str, Any]
+    recent_jobs: list[dict[str, Any]]
+
+
 class CaseAnalyzeRequest(BaseModel):
     case_text: str = Field(..., min_length=20)
     context_limit: int = Field(default=5, ge=1, le=10)

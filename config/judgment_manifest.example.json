@@ -1,0 +1,29 @@
+{
+  "judgments": [
+    {
+      "title": "Example v. Example",
+      "court_code": "SC",
+      "source_code": "ESCR",
+      "case_number": "Civil Appeal No. 0000 of 2025",
+      "neutral_citation": "2025 INSC 0000",
+      "judgment_date": "2025-01-01",
+      "judgment_type": "FINAL",
+      "pdf_url": "https://example.gov.in/path/to/official-judgment.pdf",
+      "metadata": {
+        "notes": "Replace this row with an official Supreme Court/e-SCR or High Court PDF URL."
+      }
+    },
+    {
+      "title": "Local PDF Example",
+      "court_code": "HC-DEL",
+      "source_code": "HC-DEL",
+      "case_number": "W.P.(C) 0000/2025",
+      "judgment_date": "2025-01-02",
+      "judgment_type": "FINAL",
+      "local_pdf_path": "F:/path/to/already-downloaded-judgment.pdf",
+      "metadata": {
+        "notes": "Use local_pdf_path when you already downloaded the official PDF manually."
+      }
+    }
+  ]
+}

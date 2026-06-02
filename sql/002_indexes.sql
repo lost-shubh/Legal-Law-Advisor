@@ -73,3 +73,9 @@ CREATE INDEX IF NOT EXISTS idx_private_files_case ON private_case_files(private_
 
 CREATE INDEX IF NOT EXISTS idx_corpus_targets_type ON corpus_targets(target_type, court_level, domain_tag);
 CREATE INDEX IF NOT EXISTS idx_collection_batches_target ON collection_batches(target_code, status);
+
+CREATE INDEX IF NOT EXISTS idx_ingestion_jobs_status ON ingestion_jobs(status);
+CREATE INDEX IF NOT EXISTS idx_ingestion_jobs_type ON ingestion_jobs(job_type, source_code);
+CREATE INDEX IF NOT EXISTS idx_ingestion_items_job ON ingestion_items(job_id);
+CREATE INDEX IF NOT EXISTS idx_ingestion_items_status ON ingestion_items(status);
+CREATE INDEX IF NOT EXISTS idx_ingestion_items_hash ON ingestion_items(content_hash);

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from legal_db.case_intake.pipeline import CaseIntakePipeline
+from legal_db.ingest.jobs import IngestionJobTracker
 from legal_db.llm.ollama import OllamaChatClient, OllamaSettings
 from legal_db.llm.rag import LocalLegalRagPipeline
 from legal_db.retrieval.staging import StagingRetrievalService
@@ -10,6 +11,7 @@ from .schemas import (
     CaseAnalyzeResponse,
     ChatRequest,
     ChatResponse,
+    IngestionStatusResponse,
     ModelStatusResponse,
     SearchRequest,
     SearchResponse,
@@ -39,6 +41,11 @@ try:
     @app.get("/v1/corpus/progress")
     def corpus_progress_route() -> dict:
         return retrieval_service.progress()
+
+    @app.get("/v1/ingestion/status", response_model=IngestionStatusResponse)
+    def ingestion_status_route() -> IngestionStatusResponse:
+        status = IngestionJobTracker().status()
+        return IngestionStatusResponse(**status)
 
     @app.get("/v1/models/ollama", response_model=ModelStatusResponse)
     def ollama_status_route() -> ModelStatusResponse:

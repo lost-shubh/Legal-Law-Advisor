@@ -14,6 +14,7 @@ uvicorn legal_api.main:app --reload --host 127.0.0.1 --port 8000
 ```text
 GET  /health
 GET  /v1/corpus/progress
+GET  /v1/ingestion/status
 GET  /v1/models/ollama
 POST /v1/search
 POST /v1/chat
@@ -31,6 +32,14 @@ POST /v1/cases/analyze
 ```
 
 Search currently uses a local lightweight scorer over the staging SQLite corpus. Production should replace this with PostgreSQL full-text search + pgvector + reranking.
+
+## Ingestion Status
+
+```text
+GET /v1/ingestion/status
+```
+
+Returns ingestion job totals, item status totals, and recent jobs. This powers the future admin corpus dashboard and is backed by the same tracker used by `scripts/ingest_judgments.py`.
 
 ## Chat
 

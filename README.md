@@ -88,6 +88,16 @@ Track progress:
 python .\scripts\corpus_progress.py
 ```
 
+Ingest judgment PDFs from a manifest:
+
+```powershell
+python .\scripts\ingest_judgments.py --init-template .\data\judgment_manifest.local.json
+python .\scripts\ingest_judgments.py .\data\judgment_manifest.local.json --limit 10
+python .\scripts\ingest_judgments.py --status
+```
+
+See [JUDGMENT_INGESTION.md](docs/JUDGMENT_INGESTION.md).
+
 Local chatbot prototype:
 
 ```powershell
@@ -110,6 +120,7 @@ uvicorn legal_api.main:app --reload --host 127.0.0.1 --port 8000
 Useful API routes:
 
 ```text
+GET  /v1/ingestion/status
 GET  /v1/models/ollama
 POST /v1/search
 POST /v1/chat
