@@ -231,7 +231,8 @@ def split_chapters(clean_text: str) -> list[dict[str, Any]]:
 
 def extract_local_pdf_text(path: Path) -> tuple[str, str, int, int, float]:
     raw_text, page_count = extract_text_pymupdf(path)
-    clean_text = clean_ocr_text(raw_text)
+    raw_text = raw_text.replace("\x00", "")
+    clean_text = clean_ocr_text(raw_text).replace("\x00", "")
     word_count = len(clean_text.split())
     quality = estimate_text_quality(clean_text, page_count)
     return raw_text, clean_text, page_count, word_count, quality
