@@ -76,6 +76,7 @@ Last checked from Codex on 2026-06-03.
   - `POST /v1/search`
   - `POST /v1/chat`
   - `POST /v1/cases/analyze`
+  - `POST /v1/similar-cases`
 
 - Local Ollama integration:
   - preferred/default model: `llama3.2:3b`
@@ -94,6 +95,13 @@ Last checked from Codex on 2026-06-03.
   - urgent warnings
   - retrieved legal context
   - optional local LLM note
+
+- Similar cases MVP:
+  - `StagingRetrievalService.similar_cases()`
+  - `POST /v1/similar-cases`
+  - deterministic lexical similarity over parsed judgment text
+  - returns case title, case number, decision date, source URL/PDF URL, score and snippet
+  - safe empty result when the staging DB is missing or has a partial schema
 
 - Judgment ingestion tracking:
   - `legal_db/ingest/jobs.py`
@@ -132,27 +140,25 @@ python -m compileall apps legal_db scripts tests
 python -m unittest discover -s tests -v
 ```
 
-Last known test count: 21 passing on 2026-06-03.
+Last known test count: 25 passing on 2026-06-03.
 
 ## Next Build Slice
 
-Add `/v1/similar-cases`:
+Add embeddings/semantic search:
 
-1. Use the active staging SQLite `cases`, `judgments`, `source_documents`, and
-   `document_texts` tables.
-2. Start with deterministic lexical similarity/retrieval over parsed judgment text.
-3. Return case title, case number, decision date, source URL/PDF URL, score and snippet.
-4. Keep the route safe when the staging DB is missing or has a partial schema.
-5. Add focused tests for missing DB, no matches and successful matches.
+1. Start with a local/staging-friendly embedding path for `document_texts.clean_text`.
+2. Keep dependency and credential requirements explicit; do not require OpenAI to run basic tests.
+3. Add deterministic fallback behavior when embeddings are absent.
+4. Expose semantic search through the existing retrieval/API path without breaking lexical search.
+5. Add tests for missing embeddings, populated embeddings and API response shape.
 6. Run compile/tests.
 7. Commit source/docs changes only; do not commit raw PDFs, local manifests or SQLite.
 
 ## After That
 
-1. Add embeddings/semantic search.
-2. Build basic frontend pages:
+1. Build basic frontend pages:
    - ask legal question
    - analyze case
    - search judgments
    - corpus progress
-3. Add admin dashboard for ingestion jobs and corpus progress.
+2. Add admin dashboard for ingestion jobs and corpus progress.

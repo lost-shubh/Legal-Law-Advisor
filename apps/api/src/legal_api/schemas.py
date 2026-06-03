@@ -75,3 +75,23 @@ class CaseAnalyzeResponse(BaseModel):
     model: str | None = None
     model_status: str
     error: str | None = None
+
+
+class SimilarCasesRequest(BaseModel):
+    case_text: str = Field(..., min_length=20)
+    limit: int = Field(default=10, ge=1, le=50)
+
+
+class SimilarCaseResultModel(BaseModel):
+    case_title: str
+    case_number: str | None = None
+    decision_date: str | None = None
+    source_url: str | None = None
+    pdf_url: str | None = None
+    score: float
+    snippet: str
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class SimilarCasesResponse(BaseModel):
+    results: list[SimilarCaseResultModel]

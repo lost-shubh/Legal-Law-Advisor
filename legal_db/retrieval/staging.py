@@ -53,6 +53,30 @@ class SearchResult:
         }
 
 
+@dataclass(frozen=True)
+class SimilarCaseResult:
+    case_title: str
+    case_number: str | None
+    decision_date: str | None
+    source_url: str | None
+    pdf_url: str | None
+    score: float
+    snippet: str
+    metadata: dict[str, Any] | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "case_title": self.case_title,
+            "case_number": self.case_number,
+            "decision_date": self.decision_date,
+            "source_url": self.source_url,
+            "pdf_url": self.pdf_url,
+            "score": self.score,
+            "snippet": self.snippet,
+            "metadata": self.metadata or {},
+        }
+
+
 def tokenize(value: str) -> set[str]:
     return {
         token
@@ -157,10 +181,80 @@ class StagingRetrievalService:
         ]
         return "\n\n---\n\n".join(parts), results
 
+    def similar_cases(self, case_text: str, limit: int = 10) -> list[SimilarCaseResult]:
+        terms = tokenize(case_text)
+        if not terms or not self.db_path.exists():
+            return []
+        with self._connect() as conn:
+            required_tables = ["cases", "judgments", "source_documents", "document_texts"]
+            if not all(table_exists(conn, table_name) for table_name in required_tables):
+                return []
+            rows = conn.execute(
+                """
+                SELECT
+                  c.id,
+                  c.title,
+                  c.case_number,
+                  c.diary_no,
+                  c.decision_date,
+                  c.source_url AS case_source_url,
+                  j.pdf_url,
+                  sd.source_url AS document_source_url,
+                  dt.clean_text
+                FROM judgments j
+                JOIN cases c ON c.id = j.case_id
+                JOIN source_documents sd ON sd.id = j.source_document_id
+                JOIN document_texts dt ON dt.source_document_id = j.source_document_id
+                WHERE dt.clean_text IS NOT NULL
+                """
+            ).fetchall()
+
+        results: list[SimilarCaseResult] = []
+        for (
+            case_id,
+            title,
+            case_number,
+            diary_no,
+            decision_date,
+            case_source_url,
+            pdf_url,
+            document_source_url,
+            clean_text,
+        ) in rows:
+            haystack = f"{title or ''} {case_number or ''} {diary_no or ''} {clean_text or ''}"
+            score = self._similarity_score(haystack, terms)
+            if score <= 0:
+                continue
+            results.append(
+                SimilarCaseResult(
+                    case_title=title or "Supreme Court Judgment",
+                    case_number=case_number,
+                    decision_date=decision_date,
+                    source_url=case_source_url or document_source_url,
+                    pdf_url=pdf_url,
+                    score=score,
+                    snippet=make_snippet(clean_text or "", terms),
+                    metadata={"case_id": case_id, "diary_no": diary_no},
+                )
+            )
+        results.sort(key=lambda item: item.score, reverse=True)
+        return results[: max(min(limit, 50), 1)]
+
     def _score(self, text: str, terms: set[str], exact_bonus: float = 0) -> float:
         lowered = text.lower()
         score = sum(1 for term in terms if term in lowered)
         return float(score) + exact_bonus
+
+    def _similarity_score(self, text: str, terms: set[str]) -> float:
+        document_terms = tokenize(text)
+        if not document_terms:
+            return 0.0
+        overlap = terms & document_terms
+        if not overlap:
+            return 0.0
+        coverage = len(overlap) / max(len(terms), 1)
+        specificity = len(overlap) / max(len(document_terms), 1)
+        return round((coverage * 0.85) + (specificity * 0.15), 6)
 
     def _search_sections(
         self, conn: sqlite3.Connection, terms: set[str], query: str

@@ -89,3 +89,22 @@ class ApiAppTest(unittest.TestCase):
         payload = response.json()
         self.assertEqual(payload["model_status"], "skipped")
         self.assertIn("CHEQUE_BOUNCE", payload["analysis"]["issue_tags"])
+
+    def test_similar_cases_route_is_available(self) -> None:
+        from fastapi.testclient import TestClient
+
+        from legal_api.main import app
+
+        client = TestClient(app)
+        response = client.post(
+            "/v1/similar-cases",
+            json={
+                "case_text": (
+                    "Cheque dishonour with statutory legal notice, bank return memo, "
+                    "and evidence of service."
+                ),
+                "limit": 3,
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("results", response.json())

@@ -16,6 +16,8 @@ from .schemas import (
     ModelStatusResponse,
     SearchRequest,
     SearchResponse,
+    SimilarCasesRequest,
+    SimilarCasesResponse,
 )
 
 
@@ -98,6 +100,11 @@ try:
             model_status=response.model_status,
             error=response.error,
         )
+
+    @app.post("/v1/similar-cases", response_model=SimilarCasesResponse)
+    def similar_cases_route(request: SimilarCasesRequest) -> SimilarCasesResponse:
+        results = retrieval_service.similar_cases(request.case_text, limit=request.limit)
+        return SimilarCasesResponse(results=[item.to_dict() for item in results])
 
 except ImportError:
     # FastAPI is an app runtime dependency. The pure function above keeps the

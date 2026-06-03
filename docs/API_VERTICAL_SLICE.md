@@ -20,6 +20,7 @@ GET  /v1/chat/status
 POST /v1/search
 POST /v1/chat
 POST /v1/cases/analyze
+POST /v1/similar-cases
 ```
 
 ## Search
@@ -102,3 +103,18 @@ POST /v1/cases/analyze
 ```
 
 This route performs a deterministic first pass over the case text, detects likely legal domains, extracts dates and evidence categories, lists missing documents, retrieves related corpus material, and optionally asks the local Ollama model for a lawyer-ready intake note.
+
+## Similar Cases
+
+```json
+{
+  "case_text": "Cheque was dishonoured and the complainant has a legal notice, bank return memo and proof of service.",
+  "limit": 5
+}
+```
+
+```text
+POST /v1/similar-cases
+```
+
+This route searches only parsed judgment text in the staging SQLite database and returns case title, case number, decision date, source/PDF URLs, score and snippet. The current implementation is deterministic lexical similarity over the available public judgment corpus. Production should replace or augment this with embeddings, citation graph signals and reranking once the corpus is larger.
