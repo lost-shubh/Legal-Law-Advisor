@@ -126,6 +126,16 @@ def row_value(row: sqlite3.Row, column_name: str, default: Any = None) -> Any:
     return row[column_name] if column_name in row.keys() else default
 
 
+def sanitize_pg_value(value: Any) -> Any:
+    if isinstance(value, str):
+        return value.replace("\x00", "")
+    return value
+
+
+def sanitize_pg_params(params: dict[str, Any]) -> dict[str, Any]:
+    return {key: sanitize_pg_value(value) for key, value in params.items()}
+
+
 def upsert_source_document(pg_conn: Any, row: sqlite3.Row) -> int | None:
     sql, _ = require_postgres_dependencies()
     source_id = require_id(
@@ -153,7 +163,7 @@ def upsert_source_document(pg_conn: Any, row: sqlite3.Row) -> int | None:
             RETURNING id
             """
         ),
-        {
+        sanitize_pg_params({
             "source_id": source_id,
             "source_url": row["source_url"],
             "canonical_url": row["final_url"],
@@ -166,7 +176,7 @@ def upsert_source_document(pg_conn: Any, row: sqlite3.Row) -> int | None:
             "fetched_at": row["fetched_at"],
             "parse_status": row["parse_status"] or "PENDING",
             "error_msg": row["error_msg"],
-        },
+        }),
     ).fetchone()
     return int(inserted[0]) if inserted is not None else None
 
@@ -220,7 +230,7 @@ def migrate_statute_rows(
                 RETURNING id
                 """
             ),
-            {
+            sanitize_pg_params({
                 "act_name": row["act_name"],
                 "short_title": row["short_title"],
                 "year": row["year"],
@@ -228,7 +238,7 @@ def migrate_statute_rows(
                 "source_id": india_code_source_id,
                 "source_url": row["source_url"],
                 "content_hash": row["content_hash"],
-            },
+            }),
         ).fetchone()
         if inserted is not None:
             statute_map[int(row["id"])] = int(inserted[0])
@@ -260,14 +270,14 @@ def migrate_statute_rows(
                 RETURNING id
                 """
             ),
-            {
+            sanitize_pg_params({
                 "statute_id": statute_id,
                 "section_number": row["section_number"],
                 "section_title": row["section_title"],
                 "section_text": row["section_text"],
                 "content_hash": row["content_hash"],
                 "source_document_id": source_document_id,
-            },
+            }),
         ).fetchone()
         if inserted is not None:
             migrated["sections"] += 1
@@ -318,7 +328,7 @@ def migrate_judgment_rows(
                 RETURNING id
                 """
             ),
-            {
+            sanitize_pg_params({
                 "case_number": row["case_number"],
                 "neutral_citation": row["diary_no"] if "INSC" in (row["diary_no"] or "") else None,
                 "court_id": court_id,
@@ -327,7 +337,7 @@ def migrate_judgment_rows(
                 "respondent": respondent,
                 "source_url": row["source_url"],
                 "source_document_id": source_document_id,
-            },
+            }),
         ).fetchone()
         if inserted is None:
             existing = pg_conn.execute(
@@ -340,11 +350,11 @@ def migrate_judgment_rows(
                     ORDER BY id DESC LIMIT 1
                     """
                 ),
-                {
+                sanitize_pg_params({
                     "court_id": court_id,
                     "case_number": row["case_number"],
                     "source_url": row["source_url"],
-                },
+                }),
             ).fetchone()
             if existing is None:
                 continue
@@ -388,7 +398,7 @@ def migrate_judgment_rows(
                   extraction_status = EXCLUDED.extraction_status
                 """
             ),
-            {
+            sanitize_pg_params({
                 "case_id": case_id,
                 "judgment_date": row["judgment_date"],
                 "judgment_type": row["judgment_type"] or "FINAL",
@@ -401,7 +411,7 @@ def migrate_judgment_rows(
                 "word_count": text_row["word_count"] if text_row else row["word_count"],
                 "source_document_id": source_document_id,
                 "extraction_status": "DONE" if text_row else "PENDING",
-            },
+            }),
         )
         migrated["judgments"] += 1
     return migrated

@@ -3,7 +3,12 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scripts.migrate_staging_to_postgres import row_value, split_case_title, staging_counts
+from scripts.migrate_staging_to_postgres import (
+    row_value,
+    sanitize_pg_params,
+    split_case_title,
+    staging_counts,
+)
 
 
 class MigrationHelperTest(unittest.TestCase):
@@ -42,6 +47,13 @@ class MigrationHelperTest(unittest.TestCase):
 
         self.assertEqual(row_value(row, "name"), "BNS")
         self.assertEqual(row_value(row, "missing", "fallback"), "fallback")
+
+    def test_sanitize_pg_params_removes_nul_from_strings(self) -> None:
+        params = sanitize_pg_params({"text": "hello\x00world", "count": 2, "empty": None})
+
+        self.assertEqual(params["text"], "helloworld")
+        self.assertEqual(params["count"], 2)
+        self.assertIsNone(params["empty"])
 
 
 if __name__ == "__main__":
