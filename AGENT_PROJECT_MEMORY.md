@@ -2,18 +2,24 @@
 
 Use this file before continuing project work. Do not repeatedly rediscover the same repo state.
 
+Tracked memory file: `AGENT_PROJECT_MEMORY.md`.
+Last checked from Codex on 2026-06-03.
+
 ## Working Rule
 
 - When the user says "move ahead", "build further", or similar, continue from **Next Build Slice** below.
 - Do not run `git status` at the start of every build turn.
 - Only check git state right before staging/committing/pushing, or when a command fails because the repo state is unclear.
-- Keep work in `F:\indian-legal-database`.
+- Current Codex checkout path observed: `C:\Users\Admin\Legal-Law-Advisor`.
+- Older docs/commands may mention `F:\indian-legal-database`; adapt those paths to the active checkout path.
 - Keep raw PDFs, local SQLite DBs, and `__pycache__` ignored and out of commits.
+- If code-review-graph MCP tools are available, use them before file scanning. They were not exposed in the latest Codex session, so normal Git/file inspection was used.
 
 ## Current Project State
 
 - Repo: `https://github.com/lost-shubh/Legal-Law-Advisor.git`
 - Branch: `main`
+- Canonical repo memory file: `AGENT_PROJECT_MEMORY.md`
 - Latest recorded pushed commit before issue #1 fix: `99cd2e3 Document current project build status`
 - Local staging DB: `data/legal_corpus_staging.sqlite` is ignored.
 - Current staging corpus:
