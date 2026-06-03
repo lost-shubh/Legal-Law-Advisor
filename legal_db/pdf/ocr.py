@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from importlib.util import find_spec
 from pathlib import Path
 
 
@@ -25,11 +26,15 @@ def clean_ocr_text(text: str) -> str:
 
 
 def classify_pdf(path: Path) -> str:
-    import pdfplumber
+    if find_spec("pdfplumber") is not None:
+        import pdfplumber
 
-    with pdfplumber.open(path) as pdf:
-        page_count = len(pdf.pages)
-        total_chars = sum(len(page.extract_text() or "") for page in pdf.pages)
+        with pdfplumber.open(path) as pdf:
+            page_count = len(pdf.pages)
+            total_chars = sum(len(page.extract_text() or "") for page in pdf.pages)
+    else:
+        raw_text, page_count = extract_text_pymupdf(path)
+        total_chars = len(raw_text)
     chars_per_page = total_chars / max(page_count, 1)
     if chars_per_page > 100:
         return "TEXT_PDF"
@@ -39,13 +44,25 @@ def classify_pdf(path: Path) -> str:
 
 
 def extract_text_pdf(path: Path) -> tuple[str, int]:
-    import pdfplumber
+    if find_spec("pdfplumber") is None:
+        return extract_text_pymupdf(path)
 
+    import pdfplumber
     text_parts: list[str] = []
     with pdfplumber.open(path) as pdf:
         for page in pdf.pages:
             text_parts.append(page.extract_text() or "")
         return "\n\n".join(text_parts), len(pdf.pages)
+
+
+def extract_text_pymupdf(path: Path) -> tuple[str, int]:
+    import fitz
+
+    text_parts: list[str] = []
+    with fitz.open(path) as doc:
+        for page in doc:
+            text_parts.append(page.get_text("text") or "")
+        return "\n\n".join(text_parts), doc.page_count
 
 
 def ocr_pdf(path: Path, lang: str = "eng+hin", dpi: int = 300) -> tuple[str, int]:

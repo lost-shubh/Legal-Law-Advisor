@@ -26,6 +26,12 @@ def table_exists(conn: sqlite3.Connection, table_name: str) -> bool:
     )
 
 
+def count_table(conn: sqlite3.Connection, table_name: str) -> int:
+    if not table_exists(conn, table_name):
+        return 0
+    return scalar(conn, f"SELECT COUNT(*) FROM {table_name}")
+
+
 def rows(conn: sqlite3.Connection, sql: str) -> list[dict[str, object]]:
     cursor = conn.execute(sql)
     columns = [description[0] for description in cursor.description]
@@ -46,7 +52,7 @@ def build_manifest() -> dict[str, object]:
 
     conn = sqlite3.connect(DB_PATH)
     try:
-        judgment_count = scalar(conn, "SELECT COUNT(*) FROM judgments")
+        judgment_count = count_table(conn, "judgments")
         target_judgments = int(targets.get("target_judgments", 0) or 0)
         return {
             "generated_at": datetime.now(timezone.utc).isoformat(),
@@ -54,22 +60,16 @@ def build_manifest() -> dict[str, object]:
             "status": "available",
             "targets": targets,
             "counts": {
-                "data_sources": scalar(conn, "SELECT COUNT(*) FROM data_sources"),
-                "source_documents": scalar(conn, "SELECT COUNT(*) FROM source_documents"),
-                "statutes": scalar(conn, "SELECT COUNT(*) FROM statutes"),
-                "sections": scalar(conn, "SELECT COUNT(*) FROM sections"),
-                "document_texts": scalar(conn, "SELECT COUNT(*) FROM document_texts"),
-                "cases": scalar(conn, "SELECT COUNT(*) FROM cases"),
+                "data_sources": count_table(conn, "data_sources"),
+                "source_documents": count_table(conn, "source_documents"),
+                "statutes": count_table(conn, "statutes"),
+                "sections": count_table(conn, "sections"),
+                "document_texts": count_table(conn, "document_texts"),
+                "cases": count_table(conn, "cases"),
                 "judgments": judgment_count,
-                "legal_books": scalar(conn, "SELECT COUNT(*) FROM legal_books")
-                if table_exists(conn, "legal_books")
-                else 0,
-                "book_chapters": scalar(conn, "SELECT COUNT(*) FROM book_chapters")
-                if table_exists(conn, "book_chapters")
-                else 0,
-                "book_chunks": scalar(conn, "SELECT COUNT(*) FROM book_chunks")
-                if table_exists(conn, "book_chunks")
-                else 0,
+                "legal_books": count_table(conn, "legal_books"),
+                "book_chapters": count_table(conn, "book_chapters"),
+                "book_chunks": count_table(conn, "book_chunks"),
             },
             "progress": {
                 "target_judgments": target_judgments,
@@ -101,7 +101,9 @@ def build_manifest() -> dict[str, object]:
                 GROUP BY s.id
                 ORDER BY s.id
                 """,
-            ),
+            )
+            if table_exists(conn, "statutes")
+            else [],
             "latest_supreme_court_cases": rows(
                 conn,
                 """
@@ -111,7 +113,9 @@ def build_manifest() -> dict[str, object]:
                 ORDER BY id DESC
                 LIMIT 25
                 """,
-            ),
+            )
+            if table_exists(conn, "cases")
+            else [],
             "legal_books": rows(
                 conn,
                 """

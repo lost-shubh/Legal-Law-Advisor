@@ -9,6 +9,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
+from legal_db.ingest.base import PoliteFetcher
 from legal_db.ingest.jobs import DEFAULT_DB_PATH, IngestionJobTracker
 from legal_db.ingest.judgments import JudgmentManifestIngestionPipeline, copy_manifest_template
 
@@ -20,6 +21,7 @@ def main() -> int:
     parser.add_argument("--limit", type=int)
     parser.add_argument("--no-download", action="store_true", help="Skip remote downloads.")
     parser.add_argument("--no-extract-text", action="store_true", help="Store PDFs only.")
+    parser.add_argument("--user-agent", help="Override User-Agent for portals that block bots.")
     parser.add_argument(
         "--init-template",
         help="Copy config/judgment_manifest.example.json to this path and exit.",
@@ -40,7 +42,8 @@ def main() -> int:
     if not args.manifest:
         parser.error("manifest is required unless --status or --init-template is used")
 
-    pipeline = JudgmentManifestIngestionPipeline(db_path=db_path)
+    fetcher = PoliteFetcher(user_agent=args.user_agent) if args.user_agent else None
+    pipeline = JudgmentManifestIngestionPipeline(db_path=db_path, fetcher=fetcher)
     summary = pipeline.ingest_manifest(
         args.manifest,
         limit=args.limit,

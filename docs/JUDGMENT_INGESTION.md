@@ -97,6 +97,28 @@ The API returns job counts, item counts, and the 10 most recent ingestion jobs.
 
 The Supreme Court SCR portal is official, but its public search UI is dynamic and CAPTCHA-protected. For the MVP, use it to locate official result pages/PDFs, then generate a manifest from saved result HTML or directly accessible result pages.
 
+## Supreme Court Latest Judgments Generator
+
+The Supreme Court homepage publishes a current `Judgments` list with official `view-pdf` links. The local generator converts those wrapper links into direct `sci-get-pdf` URLs and emits the standard judgment manifest shape with `source_code` set to `SCI`.
+
+Generate the current latest-judgments batch:
+
+```powershell
+python .\scripts\generate_sci_latest_manifest.py `
+  --output .\data\manifests\sc_latest_judgments.local.json `
+  --limit 25
+```
+
+Then ingest the generated manifest:
+
+```powershell
+python .\scripts\ingest_judgments.py .\data\manifests\sc_latest_judgments.local.json `
+  --limit 25 `
+  --user-agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0 Safari/537.36 LegalLawAdvisorResearch/0.1"
+```
+
+Generated `*.local.json` manifests under `data/manifests/` are local runtime data and are ignored by git.
+
 Generate from saved HTML:
 
 ```powershell

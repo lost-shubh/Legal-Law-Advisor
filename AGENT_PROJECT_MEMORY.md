@@ -22,7 +22,16 @@ Last checked from Codex on 2026-06-03.
 - Canonical repo memory file: `AGENT_PROJECT_MEMORY.md`
 - Latest recorded pushed commit before issue #1 fix: `99cd2e3 Document current project build status`
 - Local staging DB: `data/legal_corpus_staging.sqlite` is ignored.
-- Current staging corpus:
+- Active Codex checkout staging corpus at `C:\Users\Admin\Legal-Law-Advisor` after the
+  2026-06-03 SCI latest-judgments batch:
+  - 25 source documents
+  - 25 cases
+  - 25 judgments
+  - 25 document_texts
+  - 239,258 extracted words
+  - 2 completed ingestion jobs; the first extraction pass failed before the PyMuPDF
+    fallback was added, and the second pass populated text successfully
+- Older `F:\indian-legal-database` staging snapshot recorded in committed docs/manifests:
   - 16 statutes
   - 5,421 sections
   - 25 cases/judgments
@@ -101,6 +110,21 @@ Last checked from Codex on 2026-06-03.
   - extracts title, PDF URL, neutral citation, case number, judgment date and source context
   - tests in `tests/test_escr_manifest.py`
 
+- Supreme Court latest-judgments ingestion:
+  - `legal_db/ingest/sci_latest.py`
+  - `scripts/generate_sci_latest_manifest.py`
+  - parses official `www.sci.gov.in` homepage latest `Judgments` anchors with `type=j`
+  - converts `view-pdf` wrapper links to direct `sci-get-pdf` PDF URLs
+  - emits standard manifest rows with `source_code: SCI`
+  - `scripts/ingest_judgments.py` now accepts `--user-agent`; SCI blocks the default
+    bot user-agent, so use the browser-compatible agent shown in `docs/JUDGMENT_INGESTION.md`
+  - generated local manifests under `data/manifests/*.local.json` are ignored by git
+
+- PDF text extraction:
+  - `legal_db/pdf/ocr.py` now falls back to PyMuPDF when `pdfplumber` is not installed
+  - the 25 SCI judgment PDFs were parsed through this PyMuPDF fallback in the active
+    Codex checkout
+
 ## Verification Last Known Good
 
 ```powershell
@@ -108,29 +132,27 @@ python -m compileall apps legal_db scripts tests
 python -m unittest discover -s tests -v
 ```
 
-Last known test count: 18 passing.
+Last known test count: 21 passing on 2026-06-03.
 
 ## Next Build Slice
 
-Create and ingest the first Supreme Court batch:
+Add `/v1/similar-cases`:
 
-1. Generate a real SCR/e-SCR manifest into `data/manifests/sc_escr_manifest.local.json`.
-2. Ingest first 25 official Supreme Court judgments with:
-   - `scripts/generate_sc_manifest.py`
-   - `scripts/ingest_judgments.py`
-3. Keep downloaded PDFs in ignored `data/raw/judgments`.
-4. Check `/v1/ingestion/status` and corpus progress.
-5. If live e-SCR result access is blocked by CAPTCHA, use manually saved SCR result HTML or a manually curated official-PDF manifest.
+1. Use the active staging SQLite `cases`, `judgments`, `source_documents`, and
+   `document_texts` tables.
+2. Start with deterministic lexical similarity/retrieval over parsed judgment text.
+3. Return case title, case number, decision date, source URL/PDF URL, score and snippet.
+4. Keep the route safe when the staging DB is missing or has a partial schema.
+5. Add focused tests for missing DB, no matches and successful matches.
 6. Run compile/tests.
-7. Commit source/docs changes only; do not commit raw PDFs or local SQLite.
+7. Commit source/docs changes only; do not commit raw PDFs, local manifests or SQLite.
 
 ## After That
 
-1. Add `/v1/similar-cases`.
-2. Add embeddings/semantic search.
-3. Build basic frontend pages:
+1. Add embeddings/semantic search.
+2. Build basic frontend pages:
    - ask legal question
    - analyze case
    - search judgments
    - corpus progress
-4. Add admin dashboard for ingestion jobs and corpus progress.
+3. Add admin dashboard for ingestion jobs and corpus progress.

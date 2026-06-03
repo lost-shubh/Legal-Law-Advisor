@@ -22,14 +22,19 @@ class FetchResult:
 
 
 class PoliteFetcher:
-    def __init__(self, delay_seconds: int | None = None, timeout_seconds: int = 30) -> None:
+    def __init__(
+        self,
+        delay_seconds: int | None = None,
+        timeout_seconds: int = 30,
+        user_agent: str | None = None,
+    ) -> None:
         self.delay_seconds = settings.scrape_delay_seconds if delay_seconds is None else delay_seconds
         self.timeout_seconds = timeout_seconds
         self._last_fetch_at: float | None = None
         self._client = httpx.Client(
             timeout=timeout_seconds,
             follow_redirects=True,
-            headers={"User-Agent": settings.scrape_user_agent},
+            headers={"User-Agent": user_agent or settings.scrape_user_agent},
         )
 
     def get(self, url: str) -> FetchResult:

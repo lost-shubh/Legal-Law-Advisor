@@ -1,6 +1,6 @@
 # Ingestion Status
 
-Last updated: 2026-06-01
+Last updated: 2026-06-03
 
 ## Runtime Status
 
@@ -9,29 +9,33 @@ Docker Desktop was installed, but PostgreSQL/pgvector containers cannot run yet 
 Staging database:
 
 ```text
-F:\indian-legal-database\data\legal_corpus_staging.sqlite
+C:\Users\Admin\Legal-Law-Advisor\data\legal_corpus_staging.sqlite
 ```
 
 Raw documents:
 
 ```text
-F:\indian-legal-database\data\raw
+C:\Users\Admin\Legal-Law-Advisor\data\raw
 ```
+
+Older committed summaries may still reference `F:\indian-legal-database`; adapt those paths
+to the active checkout when working from Codex.
 
 ## Loaded Into Staging
 
-Current staging counts:
+Current active Codex checkout staging counts:
 
-- data sources: 9
-- source documents: 91
-- statutes: 16
-- extracted statute sections: 5421
-- extracted document texts: 41
+- source documents: 25
+- extracted document texts: 25
 - Supreme Court cases: 25
 - Supreme Court judgments: 25
-- legal books/materials: 3
-- legal book chapters: 26
-- legal book chunks: 332
+- extracted judgment words: 239,258
+- statutes: 0 in the active `C:\Users\Admin\Legal-Law-Advisor` staging DB
+- legal books/materials: 0 in the active `C:\Users\Admin\Legal-Law-Advisor` staging DB
+
+The older `F:\indian-legal-database` snapshot recorded in committed summaries had 16
+statutes, 5,421 extracted statute sections, 3 legal books/materials, 26 chapters and
+332 book chunks.
 
 ## Production Corpus Target
 
@@ -43,9 +47,10 @@ The production judgment target is now 10,000 judgments:
 
 Current judgment progress: 25 / 10,000.
 
-## Priority Acts Loaded
+## Priority Acts Loaded In Older Snapshot
 
-Official PDFs and extracted text are loaded for:
+Official PDFs and extracted text were loaded in the older `F:\indian-legal-database`
+snapshot for:
 
 - BNS, 2023
 - BNSS, 2023

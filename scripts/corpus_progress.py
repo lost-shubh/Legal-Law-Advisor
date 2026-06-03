@@ -24,6 +24,12 @@ def table_exists(conn: sqlite3.Connection, table_name: str) -> bool:
     )
 
 
+def count_table(conn: sqlite3.Connection, table_name: str) -> int:
+    if not table_exists(conn, table_name):
+        return 0
+    return count(conn, f"SELECT COUNT(*) FROM {table_name}")
+
+
 def main() -> int:
     targets = json.loads(TARGET_PATH.read_text(encoding="utf-8"))
     target_judgments = int(targets["target_judgments"])
@@ -39,16 +45,12 @@ def main() -> int:
         conn = sqlite3.connect(DB_PATH)
         try:
             current = {
-                "judgments": count(conn, "SELECT COUNT(*) FROM judgments"),
-                "statutes": count(conn, "SELECT COUNT(*) FROM statutes"),
-                "sections": count(conn, "SELECT COUNT(*) FROM sections"),
-                "document_texts": count(conn, "SELECT COUNT(*) FROM document_texts"),
-                "legal_books": count(conn, "SELECT COUNT(*) FROM legal_books")
-                if table_exists(conn, "legal_books")
-                else 0,
-                "book_chunks": count(conn, "SELECT COUNT(*) FROM book_chunks")
-                if table_exists(conn, "book_chunks")
-                else 0,
+                "judgments": count_table(conn, "judgments"),
+                "statutes": count_table(conn, "statutes"),
+                "sections": count_table(conn, "sections"),
+                "document_texts": count_table(conn, "document_texts"),
+                "legal_books": count_table(conn, "legal_books"),
+                "book_chunks": count_table(conn, "book_chunks"),
             }
         finally:
             conn.close()
