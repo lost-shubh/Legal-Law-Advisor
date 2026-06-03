@@ -5,6 +5,7 @@ from pathlib import Path
 
 from scripts.migrate_staging_to_postgres import (
     map_text_extraction_method,
+    parse_subject_tags,
     row_value,
     sanitize_pg_params,
     split_case_title,
@@ -63,6 +64,11 @@ class MigrationHelperTest(unittest.TestCase):
         self.assertEqual(map_text_extraction_method("PDF_TEXT"), "PDF_TEXT")
         self.assertEqual(map_text_extraction_method("unexpected"), "UNKNOWN")
         self.assertIsNone(map_text_extraction_method(None))
+
+    def test_parse_subject_tags_handles_json_and_plain_text(self) -> None:
+        self.assertEqual(parse_subject_tags('["criminal", "procedure"]'), ["criminal", "procedure"])
+        self.assertEqual(parse_subject_tags("legal aid"), ["legal aid"])
+        self.assertIsNone(parse_subject_tags(None))
 
 
 if __name__ == "__main__":

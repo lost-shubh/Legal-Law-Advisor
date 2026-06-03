@@ -7,6 +7,7 @@ from legal_db.ai.extract import (
     extract_staging_judgments,
     staging_extraction_status,
 )
+from legal_db.ai.production import extract_production_judgments, production_extraction_status
 from legal_db.config import settings as legal_settings
 from legal_db.ingest.jobs import IngestionJobTracker
 from legal_db.llm.ollama import OllamaChatClient, OllamaSettings
@@ -70,7 +71,11 @@ try:
         return AdminOverviewResponse(
             corpus=retrieval_service.progress(),
             ingestion=IngestionJobTracker().status(),
-            extraction=staging_extraction_status(),
+            extraction=(
+                production_extraction_status()
+                if retrieval_service.use_production()
+                else staging_extraction_status()
+            ),
             models={
                 "ollama": ollama_status,
                 "extraction": extraction_model,
@@ -104,14 +109,25 @@ try:
 
     @app.get("/v1/extractions/status", response_model=ExtractionStatusResponse)
     def extraction_status_route() -> ExtractionStatusResponse:
-        return ExtractionStatusResponse(**staging_extraction_status())
+        status = (
+            production_extraction_status()
+            if retrieval_service.use_production()
+            else staging_extraction_status()
+        )
+        return ExtractionStatusResponse(**status)
 
     @app.post("/v1/extractions/judgments", response_model=ExtractionRunResponse)
     def extract_judgments_route(request: ExtractionRunRequest) -> ExtractionRunResponse:
-        summary = extract_staging_judgments(
-            limit=request.limit,
-            model=request.model or LOCAL_EXTRACTION_MODEL,
-        )
+        if retrieval_service.use_production():
+            summary = extract_production_judgments(
+                limit=request.limit,
+                model=request.model or LOCAL_EXTRACTION_MODEL,
+            )
+        else:
+            summary = extract_staging_judgments(
+                limit=request.limit,
+                model=request.model or LOCAL_EXTRACTION_MODEL,
+            )
         return ExtractionRunResponse(**summary.to_dict())
 
     @app.post("/v1/search", response_model=SearchResponse)

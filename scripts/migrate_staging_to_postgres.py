@@ -152,6 +152,18 @@ def map_text_extraction_method(method: str | None) -> str | None:
     return mapped if mapped in allowed else "UNKNOWN"
 
 
+def parse_subject_tags(value: str | None) -> list[str] | None:
+    if not value:
+        return None
+    try:
+        parsed = json.loads(value)
+    except json.JSONDecodeError:
+        return [value]
+    if isinstance(parsed, list):
+        return [str(item) for item in parsed if str(item).strip()]
+    return [str(parsed)]
+
+
 def upsert_source_document(pg_conn: Any, row: sqlite3.Row) -> int | None:
     sql, _ = require_postgres_dependencies()
     source_id = require_id(
@@ -480,6 +492,130 @@ def migrate_judgment_rows(
     return migrated
 
 
+def migrate_legal_book_rows(
+    sqlite_conn: sqlite3.Connection,
+    pg_conn: Any,
+    source_map: dict[int, int],
+) -> dict[str, int]:
+    sql, _ = require_postgres_dependencies()
+    migrated = {"legal_books": 0, "book_chapters": 0, "book_chunks": 0}
+    sqlite_conn.row_factory = sqlite3.Row
+    if not sqlite_table_exists(sqlite_conn, "legal_books"):
+        return migrated
+
+    book_map: dict[int, int] = {}
+    for row in sqlite_conn.execute("SELECT * FROM legal_books ORDER BY id"):
+        source_document_id = (
+            source_map.get(int(row["source_document_id"])) if row["source_document_id"] else None
+        )
+        inserted = pg_conn.execute(
+            sql(
+                """
+                INSERT INTO legal_books
+                (title, material_type, source_code, jurisdiction, subject_tags, source_url,
+                 source_document_id, content_hash, rights_note)
+                VALUES (:title, :material_type, :source_code, :jurisdiction, :subject_tags,
+                        :source_url, :source_document_id, :content_hash, :rights_note)
+                ON CONFLICT (title, source_url) DO UPDATE SET
+                  material_type = EXCLUDED.material_type,
+                  source_code = EXCLUDED.source_code,
+                  jurisdiction = EXCLUDED.jurisdiction,
+                  subject_tags = EXCLUDED.subject_tags,
+                  source_document_id = EXCLUDED.source_document_id,
+                  content_hash = EXCLUDED.content_hash,
+                  rights_note = EXCLUDED.rights_note,
+                  updated_at = NOW()
+                RETURNING id
+                """
+            ),
+            sanitize_pg_params({
+                "title": row["title"],
+                "material_type": row["material_type"] or "OTHER",
+                "source_code": row["source_code"],
+                "jurisdiction": row["jurisdiction"] or "INDIA",
+                "subject_tags": parse_subject_tags(row["subject_tags"]),
+                "source_url": row["source_url"],
+                "source_document_id": source_document_id,
+                "content_hash": row["content_hash"],
+                "rights_note": row["rights_note"],
+            }),
+        ).fetchone()
+        if inserted is not None:
+            book_map[int(row["id"])] = int(inserted[0])
+            migrated["legal_books"] += 1
+
+    chapter_map: dict[int, int] = {}
+    if sqlite_table_exists(sqlite_conn, "book_chapters"):
+        for row in sqlite_conn.execute("SELECT * FROM book_chapters ORDER BY id"):
+            book_id = book_map.get(int(row["book_id"]))
+            if book_id is None:
+                continue
+            inserted = pg_conn.execute(
+                sql(
+                    """
+                    INSERT INTO book_chapters
+                    (book_id, chapter_number, chapter_title, start_char, end_char,
+                     chapter_text, content_hash)
+                    VALUES (:book_id, :chapter_number, :chapter_title, :start_char,
+                            :end_char, :chapter_text, :content_hash)
+                    ON CONFLICT (book_id, chapter_number, chapter_title) DO UPDATE SET
+                      start_char = EXCLUDED.start_char,
+                      end_char = EXCLUDED.end_char,
+                      chapter_text = EXCLUDED.chapter_text,
+                      content_hash = EXCLUDED.content_hash
+                    RETURNING id
+                    """
+                ),
+                sanitize_pg_params({
+                    "book_id": book_id,
+                    "chapter_number": row["chapter_number"],
+                    "chapter_title": row["chapter_title"],
+                    "start_char": row["start_char"],
+                    "end_char": row["end_char"],
+                    "chapter_text": row["chapter_text"],
+                    "content_hash": row["content_hash"],
+                }),
+            ).fetchone()
+            if inserted is not None:
+                chapter_map[int(row["id"])] = int(inserted[0])
+                migrated["book_chapters"] += 1
+
+    if sqlite_table_exists(sqlite_conn, "book_chunks"):
+        for row in sqlite_conn.execute("SELECT * FROM book_chunks ORDER BY id"):
+            book_id = book_map.get(int(row["book_id"]))
+            chapter_id = (
+                chapter_map.get(int(row["chapter_id"])) if row["chapter_id"] is not None else None
+            )
+            if book_id is None:
+                continue
+            inserted = pg_conn.execute(
+                sql(
+                    """
+                    INSERT INTO book_chunks
+                    (book_id, chapter_id, chunk_index, chunk_text, word_count, content_hash)
+                    VALUES (:book_id, :chapter_id, :chunk_index, :chunk_text,
+                            :word_count, :content_hash)
+                    ON CONFLICT (book_id, chapter_id, chunk_index) DO UPDATE SET
+                      chunk_text = EXCLUDED.chunk_text,
+                      word_count = EXCLUDED.word_count,
+                      content_hash = EXCLUDED.content_hash
+                    RETURNING id
+                    """
+                ),
+                sanitize_pg_params({
+                    "book_id": book_id,
+                    "chapter_id": chapter_id,
+                    "chunk_index": row["chunk_index"],
+                    "chunk_text": row["chunk_text"],
+                    "word_count": row["word_count"],
+                    "content_hash": row["content_hash"],
+                }),
+            ).fetchone()
+            if inserted is not None:
+                migrated["book_chunks"] += 1
+    return migrated
+
+
 def migrate(db_path: str | Path, database_url: str | None, dry_run: bool) -> MigrationSummary:
     path = Path(db_path)
     counts = staging_counts(path)
@@ -509,6 +645,7 @@ def migrate(db_path: str | Path, database_url: str | None, dry_run: bool) -> Mig
             migrated = {"source_documents": source_count}
             migrated.update(migrate_statute_rows(sqlite_conn, pg_conn, source_map))
             migrated.update(migrate_judgment_rows(sqlite_conn, pg_conn, source_map))
+            migrated.update(migrate_legal_book_rows(sqlite_conn, pg_conn, source_map))
         return MigrationSummary(True, True, False, counts, migrated, errors)
     except Exception as exc:
         errors.append(str(exc))
