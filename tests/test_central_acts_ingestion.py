@@ -70,6 +70,24 @@ class CentralActsIngestionTest(unittest.TestCase):
         self.assertNotIn("Subs. by Act", sections[0]["text"])
         self.assertIn("Definitions", sections[1]["title"])
 
+    def test_extract_sections_supports_roman_numbered_old_acts(self) -> None:
+        body = """
+        ACT NO. III OF 1846
+
+        An Act for the establishment and maintenance of field boundary marks.
+
+        I. It is hereby enacted, that it shall be lawful for Revenue Officers to require that marks be
+        erected and maintained on the boundaries of fields for permanently distinguishing those fields.
+
+        II. And it is hereby enacted, that the requisition shall be served on the persons owning or
+        occupying each field according to the form annexed to this Act.
+        """
+
+        sections = extract_sections_from_act_text(body)
+
+        self.assertEqual([section["number"] for section in sections], ["I", "II"])
+        self.assertIn("Revenue Officers", sections[0]["text"])
+
 
 if __name__ == "__main__":
     unittest.main()

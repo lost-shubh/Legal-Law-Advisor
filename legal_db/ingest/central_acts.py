@@ -20,6 +20,10 @@ SECTION_HEADER_RE = re.compile(
     r"(?ms)^\s*([0-9]+[A-Z]{0,4})\.\s+([^\n]{3,220})\n"
     r"(.*?)(?=^\s*[0-9]+[A-Z]{0,4}\.\s+[^\n]{3,220}\n|\Z)"
 )
+ROMAN_SECTION_HEADER_RE = re.compile(
+    r"(?ms)^\s*([IVXLCDM]{1,12})\.\s+([^\n]{3,220})\n"
+    r"(.*?)(?=^\s*[IVXLCDM]{1,12}\.\s+[^\n]{3,220}\n|\Z)"
+)
 ACT_BODY_MARKERS = (
     re.compile(r"(?im)^\s*ACT\s+NO\.\s+\d+\s+OF\s+\d{4}"),
     re.compile(r"(?i)\bAn\s+Act\s+to\b"),
@@ -200,10 +204,14 @@ def looks_like_footnote_title(title: str) -> bool:
     return bool(FOOTNOTE_TITLE_RE.search(title))
 
 
-def extract_sections_from_act_text(text_value: str) -> list[dict[str, str]]:
-    start = act_body_start(text_value)
+def collect_section_matches(
+    pattern: re.Pattern[str],
+    text_value: str,
+    *,
+    start: int,
+) -> dict[str, tuple[str, str, int]]:
     found: dict[str, tuple[str, str, int]] = {}
-    for match in SECTION_HEADER_RE.finditer(text_value):
+    for match in pattern.finditer(text_value):
         if match.start() < start:
             continue
         number = match.group(1).strip()
@@ -216,6 +224,14 @@ def extract_sections_from_act_text(text_value: str) -> list[dict[str, str]]:
         existing = found.get(number)
         if existing is None or len(body) > len(existing[1]):
             found[number] = (title, body, match.start())
+    return found
+
+
+def extract_sections_from_act_text(text_value: str) -> list[dict[str, str]]:
+    start = act_body_start(text_value)
+    found = collect_section_matches(SECTION_HEADER_RE, text_value, start=start)
+    if not found:
+        found = collect_section_matches(ROMAN_SECTION_HEADER_RE, text_value, start=start)
     return [
         {"number": number, "title": title, "text": body}
         for number, (title, body, _) in sorted(found.items(), key=lambda item: item[1][2])
@@ -395,7 +411,6 @@ def replace_sections(
     *,
     statute_id: int,
     source_document_id: int,
-    source_url: str,
     sections: list[dict[str, str]],
 ) -> int:
     conn.execute(
@@ -408,28 +423,93 @@ def replace_sections(
         ),
         {"statute_id": statute_id},
     )
-    conn.execute(sql_text("DELETE FROM sections WHERE statute_id = :statute_id"), {"statute_id": statute_id})
+    existing_rows = conn.execute(
+        sql_text(
+            """
+            SELECT id, section_number
+            FROM sections
+            WHERE statute_id = :statute_id
+            ORDER BY id
+            """
+        ),
+        {"statute_id": statute_id},
+    ).mappings()
+    existing_by_number: dict[str, int] = {}
+    for row in existing_rows:
+        existing_by_number.setdefault(str(row["section_number"]), int(row["id"]))
+
+    new_numbers = {section["number"] for section in sections}
     for section in sections:
-        conn.execute(
-            sql_text(
-                """
-                INSERT INTO sections
-                (statute_id, section_number, section_title, section_text, is_current,
-                 source_document_id, content_hash)
-                VALUES (:statute_id, :section_number, :section_title, :section_text, true,
-                        :source_document_id, :content_hash)
-                """
-            ),
-            {
-                "statute_id": statute_id,
-                "section_number": section["number"],
-                "section_title": section["title"],
-                "section_text": section["text"],
-                "source_document_id": source_document_id,
-                "source_url": source_url,
-                "content_hash": sha256_text(section["text"]),
-            },
-        )
+        section_id = existing_by_number.get(section["number"])
+        params = {
+            "statute_id": statute_id,
+            "section_number": section["number"],
+            "section_title": section["title"],
+            "section_text": section["text"],
+            "source_document_id": source_document_id,
+            "content_hash": sha256_text(section["text"]),
+        }
+        if section_id is not None:
+            conn.execute(
+                sql_text(
+                    """
+                    UPDATE sections
+                    SET section_title = :section_title,
+                        section_text = :section_text,
+                        is_current = true,
+                        source_document_id = :source_document_id,
+                        content_hash = :content_hash,
+                        updated_at = NOW()
+                    WHERE id = :section_id
+                    """
+                ),
+                {**params, "section_id": section_id},
+            )
+        else:
+            conn.execute(
+                sql_text(
+                    """
+                    INSERT INTO sections
+                    (statute_id, section_number, section_title, section_text, is_current,
+                     source_document_id, content_hash)
+                    VALUES (:statute_id, :section_number, :section_title, :section_text, true,
+                            :source_document_id, :content_hash)
+                    """
+                ),
+                params,
+            )
+
+    conn.execute(
+        sql_text(
+            """
+            DELETE FROM sections s
+            WHERE s.statute_id = :statute_id
+              AND s.section_number <> ALL(:new_numbers)
+              AND NOT EXISTS (
+                SELECT 1
+                FROM case_sections cs
+                WHERE cs.section_id = s.id
+              )
+            """
+        ),
+        {"statute_id": statute_id, "new_numbers": list(new_numbers)},
+    )
+    conn.execute(
+        sql_text(
+            """
+            UPDATE sections s
+            SET is_current = false, updated_at = NOW()
+            WHERE s.statute_id = :statute_id
+              AND s.section_number <> ALL(:new_numbers)
+              AND EXISTS (
+                SELECT 1
+                FROM case_sections cs
+                WHERE cs.section_id = s.id
+              )
+            """
+        ),
+        {"statute_id": statute_id, "new_numbers": list(new_numbers)},
+    )
     return len(sections)
 
 
@@ -527,7 +607,6 @@ def import_central_acts(
                         conn,
                         statute_id=statute_id,
                         source_document_id=source_document_id,
-                        source_url=candidate.pdf_url,
                         sections=sections,
                     )
                 summary.imported_source_documents += 1
