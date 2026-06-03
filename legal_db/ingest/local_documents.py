@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -11,7 +12,7 @@ from legal_db.config import settings
 from legal_db.pdf.ocr import clean_ocr_text, estimate_text_quality, extract_text_pymupdf
 
 
-SUPPORTED_EXTENSIONS = {".pdf"}
+SUPPORTED_EXTENSIONS = {".pdf", ".html", ".htm", ".txt"}
 PERSONAL_SKIP_PATTERNS = (
     "cover letter",
     "cover_letter",
@@ -31,6 +32,9 @@ class LocalDocumentCandidate:
     material_type: str
     document_type: str
     subject_tags: list[str]
+    source_url: str | None
+    canonical_url: str | None
+    mime_type: str
 
 
 @dataclass
@@ -95,6 +99,26 @@ def normalize_title(path: Path) -> str:
     return stem or path.name
 
 
+def load_document_manifest(manifest_path: str | Path | None) -> dict[str, dict[str, Any]]:
+    if manifest_path is None:
+        return {}
+    path = Path(manifest_path)
+    if path.is_dir():
+        path = path / "manifest.json"
+    if not path.exists():
+        return {}
+    data = json.loads(path.read_text(encoding="utf-8"))
+    documents = data.get("documents", []) if isinstance(data, dict) else []
+    manifest: dict[str, dict[str, Any]] = {}
+    for entry in documents:
+        if not isinstance(entry, dict):
+            continue
+        filename = entry.get("filename") or entry.get("path")
+        if filename:
+            manifest[Path(str(filename)).name] = entry
+    return manifest
+
+
 def should_skip_path(path: Path, *, include_personal: bool = False) -> str | None:
     if not path.is_file():
         return "not a file"
@@ -129,11 +153,35 @@ def document_type_for_material(material_type: str) -> str:
     return "BOOK_PDF"
 
 
+def document_type_for_path(path: Path, material_type: str) -> str:
+    suffix = path.suffix.lower()
+    if suffix in {".html", ".htm"}:
+        return "HTML_PAGE"
+    if suffix == ".txt":
+        return "OTHER"
+    return document_type_for_material(material_type)
+
+
+def mime_type_for_path(path: Path) -> str:
+    suffix = path.suffix.lower()
+    if suffix == ".pdf":
+        return "application/pdf"
+    if suffix in {".html", ".htm"}:
+        return "text/html"
+    if suffix == ".txt":
+        return "text/plain"
+    return "application/octet-stream"
+
+
 def infer_subject_tags(title: str) -> list[str]:
     lowered = title.lower()
     tags: set[str] = {"LOCAL_LIBRARY"}
     if any(term in lowered for term in ["sanhita", "adhiniyam", "bns", "bnss", "bsa"]):
         tags.add("CRIMINAL_LAW")
+    if any(term in lowered for term in ["bns", "nyaya sanhita"]):
+        tags.add("BNS")
+    if "new criminal law" in lowered or "sankalan" in lowered:
+        tags.add("NEW_CRIMINAL_LAWS")
     if any(term in lowered for term in ["police", "jail", "prison", "ips", "capf"]):
         tags.add("POLICING")
     if any(term in lowered for term in ["disaster", "fire", "emergency"]):
@@ -149,8 +197,10 @@ def discover_local_documents(
     folder: str | Path,
     *,
     include_personal: bool = False,
+    manifest_path: str | Path | None = None,
 ) -> tuple[list[LocalDocumentCandidate], list[dict[str, str]], int]:
     root = Path(folder)
+    manifest = load_document_manifest(manifest_path)
     candidates: list[LocalDocumentCandidate] = []
     skipped: list[dict[str, str]] = []
     scanned = 0
@@ -162,15 +212,26 @@ def discover_local_documents(
         if reason:
             skipped.append({"path": str(path), "reason": reason})
             continue
-        title = normalize_title(path)
-        material_type = infer_material_type(title)
+        entry = manifest.get(path.name, {})
+        title = str(entry.get("title") or normalize_title(path))
+        material_type = str(entry.get("material_type") or infer_material_type(title))
+        document_type = str(entry.get("document_type") or document_type_for_path(path, material_type))
+        subject_tags = set(infer_subject_tags(title))
+        manifest_tags = entry.get("subject_tags") or entry.get("tags") or []
+        if isinstance(manifest_tags, list):
+            subject_tags.update(str(tag) for tag in manifest_tags)
+        if "OFFICIAL_PUBLIC" in subject_tags:
+            subject_tags.discard("LOCAL_LIBRARY")
         candidates.append(
             LocalDocumentCandidate(
                 path=path,
                 title=title,
                 material_type=material_type,
-                document_type=document_type_for_material(material_type),
-                subject_tags=infer_subject_tags(title),
+                document_type=document_type,
+                subject_tags=sorted(subject_tags),
+                source_url=entry.get("url") or entry.get("source_url"),
+                canonical_url=entry.get("canonical_url") or entry.get("url") or entry.get("source_url"),
+                mime_type=str(entry.get("content_type") or mime_type_for_path(path)).split(";")[0],
             )
         )
     return candidates, skipped, scanned
@@ -238,17 +299,59 @@ def extract_local_pdf_text(path: Path) -> tuple[str, str, int, int, float]:
     return raw_text, clean_text, page_count, word_count, quality
 
 
-def ensure_source(conn: Any, *, source_code: str, source_name: str, folder: Path) -> int:
+def extract_html_text(path: Path) -> tuple[str, str, int, int, float]:
+    from bs4 import BeautifulSoup
+
+    raw_text = path.read_text(encoding="utf-8", errors="replace").replace("\x00", "")
+    soup = BeautifulSoup(raw_text, "html.parser")
+    for tag in soup(["script", "style", "noscript"]):
+        tag.decompose()
+    text_value = soup.get_text("\n")
+    clean_text = clean_ocr_text(text_value).replace("\x00", "")
+    word_count = len(clean_text.split())
+    quality = estimate_text_quality(clean_text, 1)
+    return raw_text, clean_text, 1, word_count, quality
+
+
+def extract_plain_text(path: Path) -> tuple[str, str, int, int, float]:
+    raw_text = path.read_text(encoding="utf-8", errors="replace").replace("\x00", "")
+    clean_text = clean_ocr_text(raw_text).replace("\x00", "")
+    word_count = len(clean_text.split())
+    quality = estimate_text_quality(clean_text, 1)
+    return raw_text, clean_text, 1, word_count, quality
+
+
+def extract_local_document_text(path: Path) -> tuple[str, str, int, int, float]:
+    suffix = path.suffix.lower()
+    if suffix == ".pdf":
+        return extract_local_pdf_text(path)
+    if suffix in {".html", ".htm"}:
+        return extract_html_text(path)
+    if suffix == ".txt":
+        return extract_plain_text(path)
+    raise ValueError(f"Unsupported extension {path.suffix or '(none)'}")
+
+
+def ensure_source(
+    conn: Any,
+    *,
+    source_code: str,
+    source_name: str,
+    folder: Path,
+    is_official: bool = False,
+    notes: str | None = None,
+) -> int:
     row = conn.execute(
         sql_text(
             """
             INSERT INTO data_sources
             (source_code, source_name, source_type, base_url, jurisdiction, is_official, notes)
-            VALUES (:source_code, :source_name, 'REFERENCE', :base_url, 'INDIA', false,
-                    'Local user-provided library. Do not redistribute raw files from repository.')
+            VALUES (:source_code, :source_name, 'REFERENCE', :base_url, 'INDIA', :is_official,
+                    :notes)
             ON CONFLICT (source_code) DO UPDATE SET
               source_name = EXCLUDED.source_name,
               base_url = EXCLUDED.base_url,
+              is_official = EXCLUDED.is_official,
               notes = EXCLUDED.notes
             RETURNING id
             """
@@ -257,6 +360,9 @@ def ensure_source(conn: Any, *, source_code: str, source_name: str, folder: Path
             "source_code": source_code,
             "source_name": source_name,
             "base_url": folder.resolve().as_uri(),
+            "is_official": is_official,
+            "notes": notes
+            or "Local user-provided library. Do not redistribute raw files from repository.",
         },
     ).scalar()
     return int(row)
@@ -272,7 +378,8 @@ def upsert_source_document(
     error_msg: str | None = None,
 ) -> int:
     path = candidate.path.resolve()
-    source_url = path.as_uri()
+    source_url = candidate.source_url or path.as_uri()
+    canonical_url = candidate.canonical_url or source_url
     row = conn.execute(
         sql_text(
             """
@@ -280,7 +387,7 @@ def upsert_source_document(
             (source_id, source_url, canonical_url, document_type, local_path, content_hash,
              mime_type, byte_size, http_status, fetched_at, parse_status, error_msg)
             VALUES (:source_id, :source_url, :canonical_url, :document_type, :local_path,
-                    :content_hash, 'application/pdf', :byte_size, 200, NOW(), :parse_status,
+                    :content_hash, :mime_type, :byte_size, 200, NOW(), :parse_status,
                     :error_msg)
             ON CONFLICT (source_url, content_hash) DO UPDATE SET
               source_id = EXCLUDED.source_id,
@@ -297,10 +404,11 @@ def upsert_source_document(
         {
             "source_id": source_id,
             "source_url": source_url,
-            "canonical_url": source_url,
+            "canonical_url": canonical_url,
             "document_type": candidate.document_type,
             "local_path": str(path),
             "content_hash": content_hash,
+            "mime_type": candidate.mime_type,
             "byte_size": path.stat().st_size,
             "parse_status": parse_status,
             "error_msg": error_msg,
@@ -318,7 +426,7 @@ def upsert_book(
     content_hash: str,
     rights_note: str,
 ) -> int:
-    source_url = candidate.path.resolve().as_uri()
+    source_url = candidate.source_url or candidate.path.resolve().as_uri()
     row = conn.execute(
         sql_text(
             """
@@ -424,9 +532,17 @@ def ingest_local_library(
     dry_run: bool = False,
     limit: int | None = None,
     min_words: int = 80,
+    manifest_path: str | Path | None = None,
+    source_official: bool = False,
+    source_notes: str | None = None,
+    rights_note: str | None = None,
 ) -> LocalLibrarySummary:
     root = Path(folder)
-    candidates, skipped, scanned = discover_local_documents(root, include_personal=include_personal)
+    candidates, skipped, scanned = discover_local_documents(
+        root,
+        include_personal=include_personal,
+        manifest_path=manifest_path,
+    )
     if limit is not None:
         candidates = candidates[: max(limit, 0)]
     summary = LocalLibrarySummary(
@@ -444,11 +560,18 @@ def ingest_local_library(
     try:
         engine = make_pg_engine(database_url)
         with engine.begin() as conn:
-            source_id = ensure_source(conn, source_code=source_code, source_name=source_name, folder=root)
+            source_id = ensure_source(
+                conn,
+                source_code=source_code,
+                source_name=source_name,
+                folder=root,
+                is_official=source_official,
+                notes=source_notes,
+            )
         for candidate in candidates:
             try:
                 content_hash = sha256_file(candidate.path)
-                raw_text, clean_text, page_count, word_count, quality = extract_local_pdf_text(
+                raw_text, clean_text, page_count, word_count, quality = extract_local_document_text(
                     candidate.path
                 )
                 with engine.begin() as conn:
@@ -459,7 +582,9 @@ def ingest_local_library(
                             source_id=source_id,
                             content_hash=content_hash,
                             parse_status="FAILED",
-                            error_msg=f"Only {word_count} extracted words; likely scanned or non-legal PDF.",
+                            error_msg=(
+                                f"Only {word_count} extracted words; likely scanned or non-text document."
+                            ),
                         )
                         summary.failed.append(
                             {
@@ -482,7 +607,8 @@ def ingest_local_library(
                         source_code=source_code,
                         source_document_id=source_document_id,
                         content_hash=content_hash,
-                        rights_note=(
+                        rights_note=rights_note
+                        or (
                             "Local user-provided document. Indexed for private/local research only; "
                             "do not commit, redistribute, or expose raw file contents publicly."
                         ),

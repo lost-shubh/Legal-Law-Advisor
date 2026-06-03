@@ -186,6 +186,14 @@ python .\scripts\build_pg_embeddings.py --source-type BOOK_CHUNK --replace
 
 Raw local PDFs stay out of git. The importer skips obvious personal/non-legal files unless `--include-personal` is passed.
 
+Download and ingest official/public BNS documents:
+
+```powershell
+python .\scripts\download_bns_public_documents.py --output-dir .\data\raw\bns_public
+python .\scripts\ingest_local_documents.py .\data\raw\bns_public --manifest .\data\raw\bns_public\manifest.json --source-code BNS_PUBLIC --source-name "Official Public BNS Documents" --official-source --source-notes "Official/public BNS documents downloaded from MHA and NCRB for local legal research." --rights-note "Official/public document indexed for local legal research. Verify current law against the source URL."
+python .\scripts\build_pg_embeddings.py --source-type BOOK_CHUNK --replace
+```
+
 Run local judgment extraction:
 
 ```powershell
