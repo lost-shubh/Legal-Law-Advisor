@@ -194,6 +194,14 @@ python .\scripts\ingest_local_documents.py .\data\raw\bns_public --manifest .\da
 python .\scripts\build_pg_embeddings.py --source-type BOOK_CHUNK --replace
 ```
 
+Import a locally downloaded India Code Central Acts corpus into PostgreSQL statutes/sections:
+
+```powershell
+python .\scripts\ingest_india_code_central_acts.py "C:\Users\Admin\india-code-central-acts" --dry-run
+python .\scripts\ingest_india_code_central_acts.py "C:\Users\Admin\india-code-central-acts"
+python .\scripts\build_pg_embeddings.py --source-type SECTION --replace
+```
+
 Run local judgment extraction:
 
 ```powershell
