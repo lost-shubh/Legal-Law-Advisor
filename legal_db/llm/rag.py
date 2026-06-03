@@ -4,7 +4,8 @@ from dataclasses import dataclass
 from typing import Any
 
 from legal_db.llm.ollama import OllamaChatClient, OllamaSettings
-from legal_db.retrieval.staging import SearchResult, StagingRetrievalService
+from legal_db.retrieval.service import LegalRetrievalService
+from legal_db.retrieval.staging import SearchResult
 
 
 @dataclass(frozen=True)
@@ -37,14 +38,14 @@ class ChatReadiness:
 
 
 class LocalLegalRagPipeline:
-    """Retrieval-first answer generation over the local staging corpus."""
+    """Retrieval-first answer generation over the legal corpus."""
 
     def __init__(
         self,
-        retrieval_service: StagingRetrievalService | None = None,
+        retrieval_service: LegalRetrievalService | None = None,
         settings: OllamaSettings | None = None,
     ) -> None:
-        self.retrieval_service = retrieval_service or StagingRetrievalService()
+        self.retrieval_service = retrieval_service or LegalRetrievalService()
         self.settings = settings or OllamaSettings()
 
     def answer(self, question: str, context_limit: int = 5, use_llm: bool = True) -> RagResponse:
@@ -99,7 +100,7 @@ class LocalLegalRagPipeline:
                 ready=False,
                 model=model_status,
                 corpus=corpus,
-                reason="The legal corpus staging database is not available.",
+                reason="The legal corpus database is not available.",
             )
         if searchable_count <= 0:
             return ChatReadiness(

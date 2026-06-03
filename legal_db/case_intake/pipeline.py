@@ -5,7 +5,8 @@ from typing import Any
 
 from legal_db.case_intake.analyzer import CaseAnalysis, analyze_case_text, build_case_llm_prompt
 from legal_db.llm.ollama import OllamaChatClient, OllamaSettings
-from legal_db.retrieval.staging import SearchResult, StagingRetrievalService
+from legal_db.retrieval.service import LegalRetrievalService
+from legal_db.retrieval.staging import SearchResult
 
 
 @dataclass(frozen=True)
@@ -27,10 +28,10 @@ class CaseIntakeResponse:
 class CaseIntakePipeline:
     def __init__(
         self,
-        retrieval_service: StagingRetrievalService | None = None,
+        retrieval_service: LegalRetrievalService | None = None,
         settings: OllamaSettings | None = None,
     ) -> None:
-        self.retrieval_service = retrieval_service or StagingRetrievalService()
+        self.retrieval_service = retrieval_service or LegalRetrievalService()
         self.settings = settings or OllamaSettings()
 
     def analyze(

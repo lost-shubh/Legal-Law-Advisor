@@ -11,7 +11,7 @@ from legal_db.config import settings as legal_settings
 from legal_db.ingest.jobs import IngestionJobTracker
 from legal_db.llm.ollama import OllamaChatClient, OllamaSettings
 from legal_db.llm.rag import LocalLegalRagPipeline
-from legal_db.retrieval.staging import StagingRetrievalService
+from legal_db.retrieval.service import LegalRetrievalService
 
 from .schemas import (
     AdminOverviewResponse,
@@ -33,7 +33,7 @@ from .schemas import (
 )
 
 
-retrieval_service = StagingRetrievalService()
+retrieval_service = LegalRetrievalService()
 
 
 def health() -> dict[str, str]:

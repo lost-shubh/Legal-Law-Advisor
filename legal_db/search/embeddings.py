@@ -7,7 +7,7 @@ import re
 import sqlite3
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable
+from typing import Any, Iterable
 
 from legal_db.config import settings
 
@@ -15,6 +15,7 @@ from legal_db.config import settings
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_STAGING_DB_PATH = ROOT / "data" / "legal_corpus_staging.sqlite"
 LOCAL_HASH_EMBEDDING_MODEL = "local-hash-embedding-v1"
+PRODUCTION_EMBEDDING_DIMENSIONS = 1536
 
 
 def chunk_words(text_value: str, chunk_size: int = 500, overlap: int = 50) -> list[str]:
@@ -91,6 +92,26 @@ class StagingEmbeddingSummary:
             "chunks": self.chunks,
             "model_name": self.model_name,
             "dimensions": self.dimensions,
+        }
+
+
+@dataclass(frozen=True)
+class ProductionEmbeddingSummary:
+    database_available: bool
+    source_rows: dict[str, int]
+    chunks: dict[str, int]
+    model_name: str
+    dimensions: int
+    errors: list[str]
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "database_available": self.database_available,
+            "source_rows": self.source_rows,
+            "chunks": self.chunks,
+            "model_name": self.model_name,
+            "dimensions": self.dimensions,
+            "errors": self.errors,
         }
 
 
@@ -234,3 +255,224 @@ def store_embeddings(
                     "content_hash": content_hash(chunk),
                 },
             )
+
+
+def build_section_embedding_text(row: Any) -> str:
+    return "\n".join(
+        part
+        for part in [
+            row["act_name"],
+            f"Section {row['section_number']}",
+            row["section_title"],
+            row["section_text"],
+        ]
+        if part
+    )
+
+
+def build_judgment_embedding_text(row: Any) -> str:
+    title = " v. ".join(part for part in [row["petitioner"], row["respondent"]] if part)
+    return "\n".join(
+        part
+        for part in [
+            row["neutral_citation"],
+            row["case_number"],
+            title,
+            str(row["judgment_date"]) if row["judgment_date"] else None,
+            row["clean_text"],
+        ]
+        if part
+    )
+
+
+def build_book_embedding_text(row: Any) -> str:
+    return "\n".join(
+        part
+        for part in [row["title"], row["chapter_title"], row["chunk_text"]]
+        if part
+    )
+
+
+def _insert_production_embedding(
+    conn: Any,
+    *,
+    source_type: str,
+    source_id: int,
+    chunk_index: int,
+    chunk_text: str,
+    model_name: str,
+    model_version: str,
+    dimensions: int,
+) -> None:
+    from sqlalchemy import text
+
+    vector = local_hash_embedding(chunk_text, dimensions=dimensions)
+    conn.execute(
+        text(
+            """
+            INSERT INTO embeddings
+            (source_type, source_id, chunk_index, chunk_text, embedding, model_name,
+             model_version, content_hash)
+            VALUES (:source_type, :source_id, :chunk_index, :chunk_text,
+                    CAST(:embedding AS vector), :model_name, :model_version, :content_hash)
+            ON CONFLICT (source_type, source_id, chunk_index, model_name)
+            DO UPDATE SET chunk_text = EXCLUDED.chunk_text,
+                          embedding = EXCLUDED.embedding,
+                          model_version = EXCLUDED.model_version,
+                          content_hash = EXCLUDED.content_hash
+            """
+        ),
+        {
+            "source_type": source_type,
+            "source_id": source_id,
+            "chunk_index": chunk_index,
+            "chunk_text": chunk_text,
+            "embedding": vector_literal(vector),
+            "model_name": model_name,
+            "model_version": model_version,
+            "content_hash": content_hash(chunk_text),
+        },
+    )
+
+
+def _delete_existing_embeddings(conn: Any, source_types: list[str], model_name: str) -> None:
+    from sqlalchemy import bindparam, text
+
+    statement = (
+        text(
+            """
+            DELETE FROM embeddings
+            WHERE model_name = :model_name
+              AND source_type IN :source_types
+            """
+        )
+        .bindparams(bindparam("source_types", expanding=True))
+    )
+    conn.execute(statement, {"model_name": model_name, "source_types": source_types})
+
+
+def build_production_embeddings(
+    *,
+    database_url: str | None = None,
+    source_types: list[str] | None = None,
+    limit: int | None = None,
+    replace: bool = False,
+    dimensions: int = PRODUCTION_EMBEDDING_DIMENSIONS,
+    model_name: str = LOCAL_HASH_EMBEDDING_MODEL,
+    model_version: str | None = None,
+    chunk_size: int = 450,
+    overlap: int = 75,
+) -> ProductionEmbeddingSummary:
+    from sqlalchemy import text
+
+    from legal_db.db import make_engine
+
+    selected_types = source_types or ["SECTION", "JUDGMENT_CHUNK", "BOOK_CHUNK"]
+    selected_types = [source_type.upper() for source_type in selected_types]
+    model_version = model_version or f"{dimensions}d"
+    source_rows = {source_type: 0 for source_type in selected_types}
+    chunks = {source_type: 0 for source_type in selected_types}
+    errors: list[str] = []
+
+    try:
+        engine = make_engine(database_url)
+        with engine.begin() as conn:
+            conn.execute(text("SELECT 1"))
+            if replace:
+                _delete_existing_embeddings(conn, selected_types, model_name)
+
+            if "SECTION" in selected_types:
+                sql = """
+                    SELECT s.id, s.section_number, s.section_title, s.section_text, st.act_name
+                    FROM sections s
+                    JOIN statutes st ON st.id = s.statute_id
+                    WHERE s.section_text IS NOT NULL
+                    ORDER BY s.id
+                """
+                params: tuple[int, ...] = ()
+                if limit is not None:
+                    sql += " LIMIT :limit"
+                rows = conn.execute(text(sql), {"limit": max(limit or 0, 0)} if limit is not None else {}).mappings()
+                for row in rows:
+                    source_rows["SECTION"] += 1
+                    chunk_text = build_section_embedding_text(row)
+                    _insert_production_embedding(
+                        conn,
+                        source_type="SECTION",
+                        source_id=int(row["id"]),
+                        chunk_index=0,
+                        chunk_text=chunk_text,
+                        model_name=model_name,
+                        model_version=model_version,
+                        dimensions=dimensions,
+                    )
+                    chunks["SECTION"] += 1
+
+            if "JUDGMENT_CHUNK" in selected_types:
+                sql = """
+                    SELECT
+                      j.id,
+                      j.clean_text,
+                      j.judgment_date,
+                      c.case_number,
+                      c.neutral_citation,
+                      c.petitioner,
+                      c.respondent
+                    FROM judgments j
+                    JOIN cases c ON c.id = j.case_id
+                    WHERE j.clean_text IS NOT NULL
+                    ORDER BY j.id
+                """
+                if limit is not None:
+                    sql += " LIMIT :limit"
+                rows = conn.execute(text(sql), {"limit": max(limit or 0, 0)} if limit is not None else {}).mappings()
+                for row in rows:
+                    source_rows["JUDGMENT_CHUNK"] += 1
+                    text_value = build_judgment_embedding_text(row)
+                    for idx, chunk_text in enumerate(
+                        chunk_words(text_value, chunk_size=chunk_size, overlap=overlap)
+                    ):
+                        _insert_production_embedding(
+                            conn,
+                            source_type="JUDGMENT_CHUNK",
+                            source_id=int(row["id"]),
+                            chunk_index=idx,
+                            chunk_text=chunk_text,
+                            model_name=model_name,
+                            model_version=model_version,
+                            dimensions=dimensions,
+                        )
+                        chunks["JUDGMENT_CHUNK"] += 1
+
+            if "BOOK_CHUNK" in selected_types:
+                sql = """
+                    SELECT bc.id, bc.chunk_text, b.title, ch.chapter_title
+                    FROM book_chunks bc
+                    JOIN legal_books b ON b.id = bc.book_id
+                    LEFT JOIN book_chapters ch ON ch.id = bc.chapter_id
+                    WHERE bc.chunk_text IS NOT NULL
+                    ORDER BY bc.id
+                """
+                if limit is not None:
+                    sql += " LIMIT :limit"
+                rows = conn.execute(text(sql), {"limit": max(limit or 0, 0)} if limit is not None else {}).mappings()
+                for row in rows:
+                    source_rows["BOOK_CHUNK"] += 1
+                    chunk_text = build_book_embedding_text(row)
+                    _insert_production_embedding(
+                        conn,
+                        source_type="BOOK_CHUNK",
+                        source_id=int(row["id"]),
+                        chunk_index=0,
+                        chunk_text=chunk_text,
+                        model_name=model_name,
+                        model_version=model_version,
+                        dimensions=dimensions,
+                    )
+                    chunks["BOOK_CHUNK"] += 1
+            conn.execute(text("ANALYZE embeddings"))
+    except Exception as exc:
+        errors.append(str(exc))
+        return ProductionEmbeddingSummary(False, source_rows, chunks, model_name, dimensions, errors)
+
+    return ProductionEmbeddingSummary(True, source_rows, chunks, model_name, dimensions, errors)
