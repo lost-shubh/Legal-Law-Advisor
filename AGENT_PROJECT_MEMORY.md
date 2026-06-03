@@ -70,6 +70,15 @@ Last checked from Codex on 2026-06-03.
     - live PostgreSQL now has 4 `BNS_PUBLIC` source documents/books, 82 BNS public chapters and 280 BNS public chunks
     - live PostgreSQL now has 42 total legal books, 1,853 total book chunks and 1,853 `BOOK_CHUNK` embeddings
     - quality checks remain 9/9 passing; search smoke tests return BNS/NCRB book chunks
+  - India Code Central Acts import from `C:\Users\Admin\india-code-central-acts` completed at commits `fe641e9` and `e76e96d`:
+    - 846 local India Code Central Act PDFs read from `manifest.csv`
+    - 846 `INDIA_CODE_CENTRAL_ACTS` source documents imported
+    - 846 Central Act statutes imported/updated
+    - 35,712 Central Act sections extracted
+    - live PostgreSQL now has 851 total statutes and 38,094 total sections
+    - `SECTION` embeddings rebuilt successfully: 38,094 section embeddings
+    - live PostgreSQL now has 41,139 total embeddings: 38,094 `SECTION`, 1,192 `JUDGMENT_CHUNK`, 1,853 `BOOK_CHUNK`
+    - quality checks remain 9/9 passing; search smoke tests return imported Central Act sections
   - API search/admin/chat status now prefer PostgreSQL retrieval and fall back to SQLite only when PostgreSQL is unavailable
   - duplicate source-document/case checks returned 0
   - quality checks are clean: 0 judgments without text, 0 impossible dates, 0 decided cases without outcomes, 0 duplicate PDF hashes, 0 wrong-dimension embeddings, 0 unvalidated AI facts
@@ -116,6 +125,14 @@ Last checked from Codex on 2026-06-03.
   - `scripts/download_bns_public_documents.py`
   - downloads a curated official-source set from MHA and NCRB, not private commentary or paywalled Manupatra material
   - use `scripts/ingest_local_documents.py --manifest ... --source-code BNS_PUBLIC --official-source` to ingest
+
+- India Code Central Acts ingestion:
+  - `legal_db.ingest.central_acts`
+  - `scripts/ingest_india_code_central_acts.py`
+  - imports a local `manifest.csv` plus downloaded India Code Central Act PDFs into PostgreSQL `source_documents`, `statutes` and `sections`
+  - extracts numeric and old Roman-numbered section headings while skipping arrangement-of-sections/front-matter and amendment-note footnotes
+  - preserves existing referenced `sections` rows by updating in place and marking only referenced stale rows non-current
+  - run `scripts/build_pg_embeddings.py --source-type SECTION --replace` after import
 
 - FastAPI routes:
   - `GET /` local browser app
