@@ -16,13 +16,25 @@ Backend API for the Legal Law Advisor platform.
 
 ```text
 GET  /health
+GET  /health/deep
 POST /v1/chat
 POST /v1/search
-POST /v1/cases
-POST /v1/cases/{case_id}/files
-GET  /v1/cases/{case_id}/analysis
-POST /v1/lawyer/reviews
-GET  /v1/admin/corpus/progress
+POST /v1/cases/analyze
+POST /v1/similar-cases
+GET  /v1/corpus/progress
+GET  /v1/ingestion/status
+GET  /v1/models/ollama
+GET  /v1/models/extraction
+GET  /v1/chat/status
+GET  /v1/extractions/status
+POST /v1/extractions/judgments
+GET  /v1/admin/overview
+GET  /v1/admin/panels
+GET  /v1/admin/corpus
+GET  /v1/admin/sources
+GET  /v1/admin/quality
+GET  /v1/admin/operations
+POST /v1/gazette/notifications
 ```
 
 ## Implementation Note

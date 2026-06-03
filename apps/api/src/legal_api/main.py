@@ -1,6 +1,12 @@
 from __future__ import annotations
 
 from legal_db.case_intake.pipeline import CaseIntakePipeline
+from legal_db.admin.production import (
+    production_admin_panels,
+    production_corpus_summary,
+    production_operations_status,
+    production_source_health,
+)
 from legal_db.ai.extract import (
     LOCAL_EXTRACTION_MODEL,
     PROMPT_VERSION,
@@ -9,12 +15,15 @@ from legal_db.ai.extract import (
 )
 from legal_db.ai.production import extract_production_judgments, production_extraction_status
 from legal_db.config import settings as legal_settings
+from legal_db.ingest.gazette import upsert_gazette_notification
 from legal_db.ingest.jobs import IngestionJobTracker
 from legal_db.llm.ollama import OllamaChatClient, OllamaSettings
 from legal_db.llm.rag import LocalLegalRagPipeline
+from legal_db.quality.production import quality_gate_passed, run_production_quality_checks
 from legal_db.retrieval.service import LegalRetrievalService
 
 from .schemas import (
+    AdminPanelResponse,
     AdminOverviewResponse,
     CaseAnalyzeRequest,
     CaseAnalyzeResponse,
@@ -25,6 +34,8 @@ from .schemas import (
     ExtractionRunRequest,
     ExtractionRunResponse,
     ExtractionStatusResponse,
+    GazetteIngestRequest,
+    GazetteIngestResponse,
     IngestionStatusResponse,
     ModelStatusResponse,
     SearchRequest,
@@ -58,6 +69,20 @@ try:
     def corpus_progress_route() -> dict:
         return retrieval_service.progress()
 
+    @app.get("/health/deep")
+    def deep_health_route() -> dict:
+        quality = run_production_quality_checks()
+        production_available = retrieval_service.use_production()
+        return {
+            "status": "ok" if retrieval_service.is_available() else "degraded",
+            "service": "legal-api",
+            "production_database": "available" if production_available else "missing_or_empty",
+            "retrieval_available": retrieval_service.is_available(),
+            "quality_gate_passed": quality_gate_passed(quality),
+            "corpus": retrieval_service.progress(),
+            "quality": quality,
+        }
+
     @app.get("/v1/admin/overview", response_model=AdminOverviewResponse)
     def admin_overview_route() -> AdminOverviewResponse:
         ollama_status = OllamaChatClient(OllamaSettings()).status().to_dict()
@@ -80,7 +105,40 @@ try:
                 "ollama": ollama_status,
                 "extraction": extraction_model,
             },
+            quality=run_production_quality_checks(),
+            sources=production_source_health(),
+            operations=production_operations_status(),
         )
+
+    @app.get("/v1/admin/panels", response_model=AdminPanelResponse)
+    def admin_panels_route() -> AdminPanelResponse:
+        return AdminPanelResponse(**production_admin_panels())
+
+    @app.get("/v1/admin/corpus")
+    def admin_corpus_route() -> dict:
+        return production_corpus_summary()
+
+    @app.get("/v1/admin/sources")
+    def admin_sources_route() -> dict:
+        return production_source_health()
+
+    @app.get("/v1/admin/quality")
+    def admin_quality_route() -> dict:
+        return run_production_quality_checks()
+
+    @app.get("/v1/admin/operations")
+    def admin_operations_route() -> dict:
+        return production_operations_status()
+
+    @app.post("/v1/gazette/notifications", response_model=GazetteIngestResponse)
+    def ingest_gazette_notification_route(request: GazetteIngestRequest) -> GazetteIngestResponse:
+        summary = upsert_gazette_notification(
+            text=request.text,
+            source_url=request.source_url,
+            source_document_id=request.source_document_id,
+            update_effective_dates=request.update_effective_dates,
+        )
+        return GazetteIngestResponse(**summary.to_dict())
 
     @app.get("/v1/ingestion/status", response_model=IngestionStatusResponse)
     def ingestion_status_route() -> IngestionStatusResponse:

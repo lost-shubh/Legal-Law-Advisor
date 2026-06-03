@@ -21,7 +21,7 @@ Last checked from Codex on 2026-06-03.
 - Repo: `https://github.com/lost-shubh/Legal-Law-Advisor.git`
 - Branch: `main`
 - Canonical repo memory file: `AGENT_PROJECT_MEMORY.md`
-- Latest recorded pushed commit before issue #1 fix: `99cd2e3 Document current project build status`
+- Latest recorded pushed commit before backend-operations completion work: `5b02cf2 Document completed production population`
 - Local staging DB: `data/legal_corpus_staging.sqlite` is ignored.
 - Active Codex checkout staging corpus at `C:\Users\Admin\Legal-Law-Advisor` after the
   2026-06-03 SCI latest-judgments batch:
@@ -60,6 +60,7 @@ Last checked from Codex on 2026-06-03.
   - API search/admin/chat status now prefer PostgreSQL retrieval and fall back to SQLite only when PostgreSQL is unavailable
   - duplicate source-document/case checks returned 0
   - quality checks are clean: 0 judgments without text, 0 impossible dates, 0 decided cases without outcomes, 0 duplicate PDF hashes, 0 wrong-dimension embeddings, 0 unvalidated AI facts
+  - backend operations completion added executable quality checks, admin/source/operations panels, Gazette notification persistence and a maintenance runner
 
 ## Built So Far
 
@@ -90,7 +91,13 @@ Last checked from Codex on 2026-06-03.
 
 - FastAPI routes:
   - `GET /health`
+  - `GET /health/deep`
   - `GET /v1/admin/overview`
+  - `GET /v1/admin/panels`
+  - `GET /v1/admin/corpus`
+  - `GET /v1/admin/sources`
+  - `GET /v1/admin/quality`
+  - `GET /v1/admin/operations`
   - `GET /v1/corpus/progress`
   - `GET /v1/ingestion/status`
   - `GET /v1/models/ollama`
@@ -102,6 +109,7 @@ Last checked from Codex on 2026-06-03.
   - `POST /v1/cases/analyze`
   - `POST /v1/similar-cases`
   - `POST /v1/extractions/judgments`
+  - `POST /v1/gazette/notifications`
 
 - Local Ollama integration:
   - preferred/default model: `llama3.2:3b`
@@ -173,8 +181,21 @@ Last checked from Codex on 2026-06-03.
 
 - Admin/operations backend MVP:
   - `GET /v1/admin/overview`
-  - read-only aggregate of corpus progress, ingestion status, extraction status, Ollama status and extraction model status
+  - read-only aggregate of corpus progress, ingestion status, extraction status, Ollama status, extraction model status, source health, operations queues and quality checks
+  - `GET /v1/admin/panels`, `/v1/admin/corpus`, `/v1/admin/sources`, `/v1/admin/quality` and `/v1/admin/operations`
+  - `legal_db.admin.production` centralizes PostgreSQL admin panel queries
+  - `legal_db.quality.production` executes PostgreSQL quality checks and reports pass/fail/error summaries
+  - `scripts/run_quality_checks.py`
+  - `scripts/run_backend_maintenance.py`
   - safe when optional staging tables are missing
+
+- Gazette backend:
+  - `legal_db.ingest.gazette.upsert_gazette_notification()`
+  - `scripts/ingest_gazette.py`
+  - `POST /v1/gazette/notifications`
+  - parses notification number, type, act name, commencement/effective date and affected sections from OCR/plain text
+  - stores rows in `gazette_notifications`, ensures an `EGAZETTE` source document when a source URL is provided and can update statute commencement/effective dates
+  - live e-Gazette harvesting is still a source/data task; the backend persistence path exists
 
 - Judgment ingestion tracking:
   - `legal_db/ingest/jobs.py`
@@ -227,7 +248,7 @@ Last checked from Codex on 2026-06-03.
 - WSL/Docker/PostgreSQL are now unblocked in the `F:\indian-legal-database` checkout.
 - PostgreSQL/pgvector production import for current staging statutes/sections/judgments is complete.
 - Do not pull `llama3.1:8b`; continue with `llama3.2:3b` default and `llama3.2:1b` fallback.
-- Remaining production gaps: High Court collectors at scale, Gazette ingestion, frontend/admin UI, live deployment/monitoring and much larger corpus scale.
+- Remaining production gaps: High Court collectors at scale, live e-Gazette source harvesting/input files, frontend/admin UI, live deployment/monitoring and much larger corpus scale.
 
 ## Verification Last Known Good
 
@@ -236,17 +257,17 @@ python -m compileall apps legal_db scripts tests
 python -m unittest discover -s tests -v
 ```
 
-Last known test count: 51 passing on 2026-06-03.
+Last known test count: 57 passing on 2026-06-03.
 
 ## Next Build Slice
 
-Continue the data/backend scale path:
+Continue the data/UI scale path:
 
 1. Collect saved official DOJ/Delhi/Bombay result HTML and generate manifests with `scripts/generate_hc_manifest.py`.
 2. Ingest generated manifests with `scripts/ingest_judgments.py`.
 3. Run production migration, extraction, citation and embedding scripts over the expanded corpus.
-4. Build basic citizen/admin frontend pages over the existing API.
-5. Add Gazette ingestion for commencement/effective-date data.
+4. Feed official e-Gazette OCR/plain text into `scripts/ingest_gazette.py` for BNS/BNSS/BSA and other priority commencement/amendment notices.
+5. Build basic citizen/admin frontend pages over the existing API.
 6. Keep source/docs changes only; do not commit raw PDFs, local manifests or SQLite.
 
 ## After That

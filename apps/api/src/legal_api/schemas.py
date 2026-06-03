@@ -96,6 +96,38 @@ class AdminOverviewResponse(BaseModel):
     ingestion: dict[str, Any]
     extraction: dict[str, Any]
     models: dict[str, Any]
+    quality: dict[str, Any] = Field(default_factory=dict)
+    sources: dict[str, Any] = Field(default_factory=dict)
+    operations: dict[str, Any] = Field(default_factory=dict)
+
+
+class AdminPanelResponse(BaseModel):
+    database_available: bool
+    corpus: dict[str, Any] = Field(default_factory=dict)
+    sources: dict[str, Any] = Field(default_factory=dict)
+    operations: dict[str, Any] = Field(default_factory=dict)
+    quality: dict[str, Any] = Field(default_factory=dict)
+
+
+class GazetteIngestRequest(BaseModel):
+    text: str = Field(..., min_length=20)
+    source_url: str | None = None
+    source_document_id: int | None = None
+    update_effective_dates: bool = True
+
+
+class GazetteIngestResponse(BaseModel):
+    database_available: bool
+    notification_id: int | None
+    source_document_id: int | None
+    notification_type: str | None
+    act_name: str | None
+    statute_id: int | None
+    notification_date: str | None
+    sections_affected: list[str]
+    updated_statutes: int
+    updated_sections: int
+    error: str | None = None
 
 
 class CaseAnalyzeRequest(BaseModel):

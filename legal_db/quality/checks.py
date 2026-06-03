@@ -50,6 +50,42 @@ QUALITY_CHECKS: list[QualityCheck] = [
         "unvalidated_ai_facts",
         "SELECT COUNT(*) AS count FROM case_facts WHERE validation_status = 'UNVALIDATED'",
     ),
+    QualityCheck(
+        "sections_without_text",
+        """
+        SELECT COUNT(*) AS count
+        FROM sections
+        WHERE section_text IS NULL OR length(trim(section_text)) = 0
+        """,
+    ),
+    QualityCheck(
+        "duplicate_source_documents",
+        """
+        SELECT COUNT(*) AS count
+        FROM (
+          SELECT source_url, content_hash
+          FROM source_documents
+          WHERE content_hash IS NOT NULL
+          GROUP BY source_url, content_hash
+          HAVING COUNT(*) > 1
+        ) d
+        """,
+        "ERROR",
+    ),
+    QualityCheck(
+        "duplicate_case_sources",
+        """
+        SELECT COUNT(*) AS count
+        FROM (
+          SELECT court_id, case_number, source_url
+          FROM cases
+          WHERE case_number IS NOT NULL AND source_url IS NOT NULL
+          GROUP BY court_id, case_number, source_url
+          HAVING COUNT(*) > 1
+        ) d
+        """,
+        "ERROR",
+    ),
 ]
 
 

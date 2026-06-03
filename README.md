@@ -29,6 +29,9 @@ Completed so far:
 - Production pgvector retrieval with local deterministic 1536-dimensional embeddings for imported sections and judgment chunks.
 - Production local extraction that populates outcomes, issues, facts and cited sections for migrated judgments.
 - Production citation graph builder for extracted judgment citations.
+- Production admin/operations backend with corpus, source-health, quality-gate and queue/status panels.
+- e-Gazette notification parser and persistence backend for commencement/amendment/effective-date records.
+- One-command backend maintenance runner for migration, embeddings, extraction, citations and quality checks.
 - Judgment ingestion tracking with job/item status, manifest ingestion, PDF hashing, raw PDF storage path, case/judgment inserts and optional text extraction.
 - Supreme Court/e-SCR manifest generator that parses saved SCR/e-SCR result HTML or accessible result pages into standard judgment manifests.
 - Saved-result HTML manifest generator for DOJ, Delhi High Court and Bombay High Court result pages.
@@ -49,7 +52,7 @@ Document texts:    44
 Embedding chunks:  6,945 production pgvector rows plus 649 local staging chunks
 Extractions:       25 production outcomes/facts plus 25 local staging judgment extractions
 Citation edges:    348
-Test suite:        51 passing tests
+Test suite:        57 passing tests
 ```
 
 Main work still left:
@@ -58,7 +61,7 @@ Main work still left:
 - Run source-specific collectors at scale for High Courts, DOJ judgment portal and district/eCourts data.
 - Run OCR and AI extraction at scale for new batches.
 - Replace deterministic local production embeddings with stronger OpenAI or local embedding models when practical.
-- Build the citizen frontend, lawyer review app and admin dashboard.
+- Build the citizen frontend, lawyer review app and admin dashboard UI over the completed backend endpoints.
 - Deploy the production PostgreSQL/pgvector stack and add operational monitoring.
 
 ## Folder Layout
@@ -160,6 +163,19 @@ python .\scripts\extract_pg_judgments.py --database-url "postgresql+psycopg2://l
 python .\scripts\build_pg_citations.py --database-url "postgresql+psycopg2://legal:legal@localhost:5432/legaldb"
 ```
 
+Run the full backend maintenance chain:
+
+```powershell
+python .\scripts\run_backend_maintenance.py --database-url "postgresql+psycopg2://legal:legal@localhost:5432/legaldb"
+python .\scripts\run_quality_checks.py --database-url "postgresql+psycopg2://legal:legal@localhost:5432/legaldb"
+```
+
+Parse and store an e-Gazette notification from OCR/plain text:
+
+```powershell
+python .\scripts\ingest_gazette.py --text-file .\data\source_exports\gazette_notice.txt --source-url "https://egazette.gov.in/..."
+```
+
 Run local judgment extraction:
 
 ```powershell
@@ -216,7 +232,12 @@ Useful API routes:
 
 ```text
 GET  /v1/ingestion/status
+GET  /v1/admin/corpus
 GET  /v1/admin/overview
+GET  /v1/admin/operations
+GET  /v1/admin/panels
+GET  /v1/admin/quality
+GET  /v1/admin/sources
 GET  /v1/models/ollama
 GET  /v1/models/extraction
 GET  /v1/chat/status
@@ -226,6 +247,7 @@ POST /v1/chat
 POST /v1/cases/analyze
 POST /v1/similar-cases
 POST /v1/extractions/judgments
+POST /v1/gazette/notifications
 ```
 
 Private user files must use the `private_case_*` tables and must not be mixed into public training data unless explicit consent and anonymization are implemented.

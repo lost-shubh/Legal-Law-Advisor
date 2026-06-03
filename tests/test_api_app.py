@@ -1,6 +1,7 @@
 import sys
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -106,6 +107,63 @@ class ApiAppTest(unittest.TestCase):
         self.assertIn("ingestion", payload)
         self.assertIn("extraction", payload)
         self.assertIn("models", payload)
+        self.assertIn("quality", payload)
+
+    def test_admin_backend_completion_routes_are_available(self) -> None:
+        from fastapi.testclient import TestClient
+
+        from legal_api.main import app
+
+        client = TestClient(app)
+        for path in [
+            "/health/deep",
+            "/v1/admin/panels",
+            "/v1/admin/corpus",
+            "/v1/admin/sources",
+            "/v1/admin/quality",
+            "/v1/admin/operations",
+        ]:
+            response = client.get(path)
+            self.assertEqual(response.status_code, 200, path)
+            self.assertIn("database_available", response.json() if path != "/health/deep" else {"database_available": True})
+
+    def test_gazette_notification_route_is_available(self) -> None:
+        from fastapi.testclient import TestClient
+
+        from legal_api.main import app
+
+        class FakeSummary:
+            def to_dict(self) -> dict:
+                return {
+                    "database_available": False,
+                    "notification_id": None,
+                    "source_document_id": None,
+                    "notification_type": "COMMENCEMENT",
+                    "act_name": "The Bharatiya Nyaya Sanhita, 2023",
+                    "statute_id": None,
+                    "notification_date": "2024-07-01",
+                    "sections_affected": [],
+                    "updated_statutes": 0,
+                    "updated_sections": 0,
+                    "error": "test double",
+                }
+
+        client = TestClient(app)
+        with patch("legal_api.main.upsert_gazette_notification", return_value=FakeSummary()):
+            response = client.post(
+                "/v1/gazette/notifications",
+                json={
+                    "text": (
+                        "MINISTRY OF HOME AFFAIRS S.O. 850(E). The Bharatiya Nyaya "
+                        "Sanhita, 2023 shall come into force on the 1st day of July, 2024."
+                    ),
+                    "update_effective_dates": False,
+                },
+            )
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertIn("database_available", payload)
+        self.assertEqual(payload["notification_type"], "COMMENCEMENT")
 
     def test_case_analyze_route_without_llm(self) -> None:
         from fastapi.testclient import TestClient
