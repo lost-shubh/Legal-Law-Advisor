@@ -46,6 +46,7 @@ ISSUE_KEYWORDS: dict[str, list[str]] = {
         "midnight",
     ],
     "CULPABLE_HOMICIDE": ["culpable homicide", "unconscious", "wooden stick", "stick", "death"],
+    "LEGAL_AID_NEED": ["no personal advocate", "no advocate", "cannot afford advocate", "legal aid"],
     "CHEQUE_BOUNCE": ["cheque", "138", "dishonour", "notice", "bank"],
     "FAMILY": ["divorce", "maintenance", "custody", "wife", "husband", "matrimonial"],
     "DOMESTIC_VIOLENCE": ["domestic violence", "dv act", "protection order"],

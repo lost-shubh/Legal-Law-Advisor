@@ -35,6 +35,7 @@ class CaseIntakeTest(unittest.TestCase):
         self.assertIn("PRIVATE_DEFENCE", analysis.issue_tags)
         self.assertIn("NIGHT_HOUSE_BREAKING", analysis.issue_tags)
         self.assertIn("CULPABLE_HOMICIDE", analysis.issue_tags)
+        self.assertIn("LEGAL_AID_NEED", analysis.issue_tags)
         self.assertIn("digital_evidence", analysis.evidence_found)
         self.assertIn("medical_forensic_records", analysis.evidence_found)
         self.assertIn("25th of May 2026", analysis.dates_found)
@@ -52,7 +53,7 @@ class CaseIntakeTest(unittest.TestCase):
         retrieval = FakeRetrievalService()
         response = CaseIntakePipeline(retrieval_service=retrieval).analyze(
             "An intruder broke into my house at 12 AM, attacked me, and later died. "
-            "Police arrested me for murder. CCTV footage exists.",
+            "Police arrested me for murder. CCTV footage exists and I have no personal advocate.",
             use_llm=False,
         )
 
@@ -60,6 +61,7 @@ class CaseIntakeTest(unittest.TestCase):
         self.assertIn("BNS Section 34: Things done in private defence", titles)
         self.assertIn("BNS Section 41: Private defence of property extending to causing death", titles)
         self.assertIn("BNS Section 103: Punishment for murder", titles)
+        self.assertIn("BNSS Sections 340-341: Defence by advocate and legal aid", titles)
         self.assertNotIn(
             "BNS Section 76: Assault or use of criminal force to woman with intent to disrobe",
             titles,

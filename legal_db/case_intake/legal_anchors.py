@@ -168,7 +168,7 @@ LEGAL_ANCHORS: tuple[LegalAnchor, ...] = (
     ),
     LegalAnchor(
         key="bnss_340_341_defence_legal_aid",
-        issue_tags=("CRIMINAL", "MURDER_CHARGE"),
+        issue_tags=("LEGAL_AID_NEED",),
         title="BNSS Sections 340-341: Defence by advocate and legal aid",
         snippet=(
             "An accused may be defended by an advocate of choice, and if lacking means, "
@@ -180,7 +180,7 @@ LEGAL_ANCHORS: tuple[LegalAnchor, ...] = (
 )
 
 
-def anchor_results_for_analysis(analysis: CaseAnalysis, limit: int = 8) -> list[SearchResult]:
+def anchor_results_for_analysis(analysis: CaseAnalysis, limit: int = 13) -> list[SearchResult]:
     issues = set(analysis.issue_tags)
     matched = [
         anchor
@@ -204,4 +204,6 @@ def anchor_query_terms(analysis: CaseAnalysis) -> list[str]:
                 "legal aid accused BNSS sections 340 341",
             ]
         )
+    if "LEGAL_AID_NEED" in issues:
+        terms.append("accused defence by advocate legal aid state expense BNSS sections 340 341")
     return terms
