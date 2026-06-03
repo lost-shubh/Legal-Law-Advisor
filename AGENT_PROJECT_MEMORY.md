@@ -57,6 +57,13 @@ Last checked from Codex on 2026-06-03.
   - legal book migration completed: 3 books, 26 chapters, 332 chunks
   - production extraction completed: 25 outcomes, 125 case issues, 221 case-section rows and 25 case facts
   - production citation graph completed: 344 citation strings, 348 case citations and 348 citation edges; 0 resolved-to-local cited cases in current 25-judgment corpus
+  - local folder import from `C:\Users\Admin\Downloads\New folder (3)` completed:
+    - 51 files scanned
+    - 49 PDFs eligible
+    - 35 PDFs imported as `LOCAL_LIBRARY`
+    - 2 files skipped as unsupported/personal (`.vcf`, Spotify cover letter)
+    - 14 PDFs left failed because embedded text extraction produced too few words; these need OCR if they must be searchable
+    - PostgreSQL now has 38 legal books, 63 book chapters, 1,573 book chunks and 1,573 `BOOK_CHUNK` embeddings
   - API search/admin/chat status now prefer PostgreSQL retrieval and fall back to SQLite only when PostgreSQL is unavailable
   - duplicate source-document/case checks returned 0
   - quality checks are clean: 0 judgments without text, 0 impossible dates, 0 decided cases without outcomes, 0 duplicate PDF hashes, 0 wrong-dimension embeddings, 0 unvalidated AI facts
