@@ -64,6 +64,12 @@ Last checked from Codex on 2026-06-03.
     - 2 files skipped as unsupported/personal (`.vcf`, Spotify cover letter)
     - 14 PDFs left failed because embedded text extraction produced too few words; these need OCR if they must be searchable
     - PostgreSQL now has 38 legal books, 63 book chapters, 1,573 book chunks and 1,573 `BOOK_CHUNK` embeddings
+  - official/public BNS import completed at commits `819691f` and `185a99a`:
+    - downloader fetched 4 official/public documents from MHA/NCRB into ignored local data
+    - imported as `BNS_PUBLIC`: MHA BNS Act PDF plus NCRB Sankalan BNS index, BNS-to-IPC section table, and chapters/sections HTML pages
+    - live PostgreSQL now has 4 `BNS_PUBLIC` source documents/books, 82 BNS public chapters and 280 BNS public chunks
+    - live PostgreSQL now has 42 total legal books, 1,853 total book chunks and 1,853 `BOOK_CHUNK` embeddings
+    - quality checks remain 9/9 passing; search smoke tests return BNS/NCRB book chunks
   - API search/admin/chat status now prefer PostgreSQL retrieval and fall back to SQLite only when PostgreSQL is unavailable
   - duplicate source-document/case checks returned 0
   - quality checks are clean: 0 judgments without text, 0 impossible dates, 0 decided cases without outcomes, 0 duplicate PDF hashes, 0 wrong-dimension embeddings, 0 unvalidated AI facts
@@ -96,13 +102,20 @@ Last checked from Codex on 2026-06-03.
   - ingestion jobs/items
   - quality/canary tables
 
-- Local folder ingestion for user-provided PDF libraries:
+- Local folder ingestion for user-provided PDF/HTML/text libraries:
   - `legal_db.ingest.local_documents`
   - `scripts/ingest_local_documents.py`
-  - imports PDFs into PostgreSQL `source_documents`, `legal_books`, `book_chapters` and `book_chunks`
+  - imports documents into PostgreSQL `source_documents`, `legal_books`, `book_chapters` and `book_chunks`
   - supports dry-run before database writes
+  - supports downloader manifests to preserve original public source URLs/titles
   - skips unsupported files and obvious personal/non-legal PDFs by default
   - raw PDFs stay local-only and must not be committed
+
+- Official/public BNS document ingestion:
+  - `legal_db.ingest.bns_public_documents`
+  - `scripts/download_bns_public_documents.py`
+  - downloads a curated official-source set from MHA and NCRB, not private commentary or paywalled Manupatra material
+  - use `scripts/ingest_local_documents.py --manifest ... --source-code BNS_PUBLIC --official-source` to ingest
 
 - FastAPI routes:
   - `GET /` local browser app
