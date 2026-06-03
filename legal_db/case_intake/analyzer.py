@@ -6,11 +6,46 @@ from typing import Any
 
 
 DATE_RE = re.compile(
-    r"\b(?:\d{1,2}[-/.]\d{1,2}[-/.]\d{2,4}|\d{1,2}\s+[A-Za-z]{3,9}\s+\d{2,4})\b"
+    r"\b(?:\d{1,2}[-/.]\d{1,2}[-/.]\d{2,4}|"
+    r"\d{1,2}(?:st|nd|rd|th)?(?:\s+of)?\s+[A-Za-z]{3,9}\s+\d{2,4})\b",
+    re.IGNORECASE,
 )
 
 ISSUE_KEYWORDS: dict[str, list[str]] = {
     "CRIMINAL": ["fir", "police", "arrest", "bail", "accused", "complaint", "charge"],
+    "MURDER_CHARGE": [
+        "murder",
+        "killed",
+        "dead",
+        "death",
+        "no sign of life",
+        "found to be dead",
+        "section 103",
+    ],
+    "PRIVATE_DEFENCE": [
+        "private defence",
+        "self defence",
+        "self-defense",
+        "protect me",
+        "protect my family",
+        "protect",
+        "intruder",
+        "attacked me",
+        "attacked him",
+    ],
+    "NIGHT_HOUSE_BREAKING": [
+        "broke into",
+        "break into",
+        "house-breaking",
+        "house breaking",
+        "intruder",
+        "back entrance",
+        "locker",
+        "safe",
+        "12 am",
+        "midnight",
+    ],
+    "CULPABLE_HOMICIDE": ["culpable homicide", "unconscious", "wooden stick", "stick", "death"],
     "CHEQUE_BOUNCE": ["cheque", "138", "dishonour", "notice", "bank"],
     "FAMILY": ["divorce", "maintenance", "custody", "wife", "husband", "matrimonial"],
     "DOMESTIC_VIOLENCE": ["domestic violence", "dv act", "protection order"],
@@ -24,7 +59,28 @@ EVIDENCE_KEYWORDS: dict[str, list[str]] = {
     "identity_documents": ["aadhaar", "pan", "passport", "id proof"],
     "police_records": ["fir", "complaint", "charge sheet", "closure report"],
     "financial_records": ["bank statement", "transaction", "cheque", "receipt", "invoice"],
-    "digital_evidence": ["whatsapp", "email", "sms", "call recording", "screenshot", "upi"],
+    "digital_evidence": [
+        "whatsapp",
+        "email",
+        "sms",
+        "call recording",
+        "screenshot",
+        "upi",
+        "cctv",
+        "camera",
+        "video",
+        "dvr",
+    ],
+    "medical_forensic_records": [
+        "injury",
+        "injuries",
+        "medical",
+        "postmortem",
+        "post-mortem",
+        "dead",
+        "death",
+    ],
+    "crime_scene_material": ["wooden stick", "stick", "locker", "safe", "blood", "clothes"],
     "property_documents": ["sale deed", "lease", "rent agreement", "mutation", "registry"],
     "court_documents": ["notice", "summons", "petition", "order", "judgment"],
 }
@@ -43,6 +99,27 @@ MISSING_DOCS_BY_ISSUE: dict[str, list[str]] = {
     "CYBER": ["transaction IDs", "screenshots", "bank complaint", "cyber complaint acknowledgement"],
     "CONSUMER": ["invoice", "warranty", "complaint emails", "service/job sheet"],
     "LABOUR": ["appointment letter", "salary slips", "termination notice", "emails/chats"],
+    "MURDER_CHARGE": [
+        "FIR and arrest memo",
+        "remand order",
+        "postmortem report",
+        "injury/MLC records for you and family members",
+        "CCTV/DVR seizure memo",
+        "site plan and forensic report",
+    ],
+    "PRIVATE_DEFENCE": [
+        "original CCTV/DVR with hash or seizure memo",
+        "photos of broken entry/locker/safe",
+        "medical records showing your injuries",
+        "witness statements from family/neighbours",
+        "seizure memo for wooden stick/clothes",
+    ],
+    "NIGHT_HOUSE_BREAKING": [
+        "CCTV footage showing entry time",
+        "photos of broken door/entrance/locker",
+        "property-loss list",
+        "scene inspection memo",
+    ],
 }
 
 
@@ -93,10 +170,17 @@ def analyze_case_text(case_text: str) -> CaseAnalysis:
 
     dates = sorted(set(DATE_RE.findall(clean)))
     warnings: list[str] = []
-    urgent_terms = _contains_any(clean, ["arrest", "threat", "violence", "suicide", "deadline"])
+    urgent_terms = _contains_any(
+        clean,
+        ["arrest", "threat", "violence", "suicide", "deadline", "murder", "dead", "death"],
+    )
     if urgent_terms:
         warnings.append(
             "Urgent-risk terms detected. The user should contact an advocate/legal aid or emergency authority immediately where appropriate."
+        )
+    if "MURDER_CHARGE" in issue_tags and "PRIVATE_DEFENCE" in issue_tags:
+        warnings.append(
+            "Murder/private-defence fact pattern detected. Preserve CCTV, medical records, seizure memos and get criminal defence counsel or legal aid immediately."
         )
     if len(clean.split()) < 80:
         warnings.append("Case text is short. More facts and documents are needed for reliable analysis.")

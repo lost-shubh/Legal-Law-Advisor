@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from legal_db.case_intake.analyzer import CaseAnalysis, analyze_case_text, build_case_llm_prompt
+from legal_db.case_intake.legal_anchors import anchor_query_terms, anchor_results_for_analysis
 from legal_db.llm.ollama import OllamaChatClient, OllamaSettings
 from legal_db.retrieval.service import LegalRetrievalService
 from legal_db.retrieval.staging import SearchResult
@@ -25,6 +26,28 @@ class CaseIntakeResponse:
         return [item.to_dict() for item in self.retrieved_results]
 
 
+def build_case_retrieval_query(case_text: str, analysis: CaseAnalysis) -> str:
+    query_parts = [
+        *analysis.issue_tags,
+        *analysis.evidence_found.keys(),
+        *anchor_query_terms(analysis),
+    ]
+    query = " ".join(part for part in query_parts if str(part).strip())
+    return query if query.strip() else case_text
+
+
+def merge_case_results(anchor_results: list[SearchResult], retrieved: list[SearchResult]) -> list[SearchResult]:
+    merged: list[SearchResult] = []
+    seen: set[tuple[str, str | None]] = set()
+    for result in [*anchor_results, *retrieved]:
+        key = (result.title, result.source_url)
+        if key in seen:
+            continue
+        seen.add(key)
+        merged.append(result)
+    return merged
+
+
 class CaseIntakePipeline:
     def __init__(
         self,
@@ -41,11 +64,19 @@ class CaseIntakePipeline:
         use_llm: bool = True,
     ) -> CaseIntakeResponse:
         analysis = analyze_case_text(case_text)
-        retrieval_query = " ".join(analysis.issue_tags + list(analysis.evidence_found.keys()))
+        anchor_results = anchor_results_for_analysis(analysis)
+        retrieval_query = build_case_retrieval_query(case_text, analysis)
         context, results = self.retrieval_service.retrieve_context(
-            retrieval_query if retrieval_query.strip() else case_text,
+            retrieval_query,
             limit=context_limit,
         )
+        results = merge_case_results(anchor_results, results)
+        if anchor_results:
+            anchor_context = "\n\n---\n\n".join(
+                f"Source: {item.source_type} | {item.title}\nURL: {item.source_url or 'local'}\n{item.snippet}"
+                for item in anchor_results
+            )
+            context = f"{anchor_context}\n\n---\n\n{context}" if context else anchor_context
 
         if not use_llm:
             return CaseIntakeResponse(

@@ -124,12 +124,14 @@ Last checked from Codex on 2026-06-03.
 
 - Case analyzer MVP:
   - issue tags
+  - high-stakes criminal anchors for murder/private-defence/night-house-breaking fact patterns
   - dates
   - evidence categories
   - missing documents
   - urgent warnings
   - retrieved legal context
   - optional local LLM note
+  - `legal_db.case_intake.legal_anchors` prepends deterministic BNS/BSA/BNSS provisions before fuzzy search results for private-defence homicide cases
 
 - Similar cases MVP:
   - `StagingRetrievalService.similar_cases()`
@@ -268,7 +270,7 @@ python -m compileall apps legal_db scripts tests
 python -m unittest discover -s tests -v
 ```
 
-Last known test count: 58 passing on 2026-06-03.
+Last known test count: 60 passing on 2026-06-03.
 
 ## Next Build Slice
 
