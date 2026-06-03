@@ -161,6 +161,47 @@ def upsert_source_document(pg_conn: Any, row: sqlite3.Row) -> int | None:
     )
     if source_id is None:
         return None
+    params = sanitize_pg_params({
+        "source_id": source_id,
+        "source_url": row["source_url"],
+        "canonical_url": row["final_url"],
+        "document_type": row["document_type"],
+        "local_path": row["local_path"],
+        "content_hash": row["content_hash"],
+        "mime_type": row["mime_type"],
+        "byte_size": row["byte_size"],
+        "http_status": row["http_status"],
+        "fetched_at": row["fetched_at"],
+        "parse_status": row["parse_status"] or "PENDING",
+        "error_msg": row["error_msg"],
+    })
+    existing = pg_conn.execute(
+        sql(
+            """
+            SELECT id FROM source_documents
+            WHERE source_url IS NOT DISTINCT FROM :source_url
+              AND content_hash IS NOT DISTINCT FROM :content_hash
+            ORDER BY id ASC LIMIT 1
+            """
+        ),
+        params,
+    ).fetchone()
+    if existing is not None:
+        pg_conn.execute(
+            sql(
+                """
+                UPDATE source_documents
+                SET canonical_url = :canonical_url,
+                    local_path = :local_path,
+                    http_status = :http_status,
+                    parse_status = :parse_status,
+                    error_msg = :error_msg
+                WHERE id = :id
+                """
+            ),
+            {**params, "id": int(existing[0])},
+        )
+        return int(existing[0])
     inserted = pg_conn.execute(
         sql(
             """
@@ -179,20 +220,7 @@ def upsert_source_document(pg_conn: Any, row: sqlite3.Row) -> int | None:
             RETURNING id
             """
         ),
-        sanitize_pg_params({
-            "source_id": source_id,
-            "source_url": row["source_url"],
-            "canonical_url": row["final_url"],
-            "document_type": row["document_type"],
-            "local_path": row["local_path"],
-            "content_hash": row["content_hash"],
-            "mime_type": row["mime_type"],
-            "byte_size": row["byte_size"],
-            "http_status": row["http_status"],
-            "fetched_at": row["fetched_at"],
-            "parse_status": row["parse_status"] or "PENDING",
-            "error_msg": row["error_msg"],
-        }),
+        params,
     ).fetchone()
     return int(inserted[0]) if inserted is not None else None
 
