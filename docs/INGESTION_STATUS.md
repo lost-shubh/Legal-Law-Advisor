@@ -44,9 +44,7 @@ Current active Codex checkout staging counts:
 - statutes: 0 in the active `C:\Users\Admin\Legal-Law-Advisor` staging DB
 - legal books/materials: 0 in the active `C:\Users\Admin\Legal-Law-Advisor` staging DB
 
-The older `F:\indian-legal-database` snapshot recorded in committed summaries had 16
-statutes, 5,421 extracted statute sections, 3 legal books/materials, 26 chapters and
-332 book chunks.
+The older `F:\indian-legal-database` staging snapshot has been migrated into PostgreSQL.
 
 ## Loaded Into PostgreSQL
 
@@ -56,14 +54,26 @@ Current production PostgreSQL counts after migration:
 - source documents: 95
 - statutes: 16
 - sections: 5,421
+- legal books: 3
+- book chapters: 26
+- book chunks: 332
 - cases: 25
 - judgments: 25
 - judgment words: 442,053
-- embeddings: 6,613
+- embeddings: 6,945
 - section embeddings: 5,421
 - judgment chunk embeddings: 1,192
+- book chunk embeddings: 332
 - embedding dimensions: 1,536
 - embedding model: `local-hash-embedding-v1`
+- outcomes: 25
+- case issues: 125
+- case sections: 221
+- case facts: 25
+- extraction runs: 25
+- citation strings: 344
+- case citations: 348
+- citation edges: 348
 
 Quality checks:
 
@@ -73,7 +83,8 @@ Quality checks:
 - duplicate source documents: 0
 - duplicate migrated cases: 0
 - embeddings with wrong dimension: 0
-- decided cases without outcomes: 25
+- decided cases without outcomes: 0
+- unvalidated AI facts: 0
 
 ## Production Corpus Target
 
@@ -117,14 +128,12 @@ The latest 25 official Supreme Court judgment PDFs visible on the Supreme Court 
 - High Court judgments
 - District court/eCourts data
 - BNS offence/charge catalog rows
-- full Law Commission report corpus
+- full Law Commission/NALSA/manual report corpus beyond the initial 3 materials
 - full OCR workflow for scanned High Court and district PDFs at scale
-- production AI extraction/outcome rows in PostgreSQL
-- citation graph
 
 ## Next Steps
 
-1. Build production extraction/outcome import for migrated judgments.
-2. Import legal books/materials into PostgreSQL and embed book chunks.
-3. Generate DOJ/Delhi/Bombay manifests from saved official result HTML and ingest them.
-4. Continue ingestion with Gazette, High Court live collectors, and eCourts pipelines.
+1. Generate DOJ/Delhi/Bombay manifests from saved official result HTML and ingest them.
+2. Run production migration, extraction, citation and embedding scripts after each new corpus batch.
+3. Continue ingestion with Gazette, High Court live collectors, and eCourts pipelines.
+4. Build the citizen frontend and admin dashboard over the existing API.

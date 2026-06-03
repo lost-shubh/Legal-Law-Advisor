@@ -52,11 +52,14 @@ Last checked from Codex on 2026-06-03.
   - production PostgreSQL now has 95 source documents, 13 data sources, 16 statutes, 5,421 sections, 25 cases and 25 judgments
   - production judgments have 442,053 total words and 0 missing `clean_text`
   - production embedding import completed successfully after commit `723919e`
-  - production PostgreSQL now has 6,613 pgvector embeddings: 5,421 `SECTION` and 1,192 `JUDGMENT_CHUNK`
+  - production PostgreSQL now has 6,945 pgvector embeddings: 5,421 `SECTION`, 1,192 `JUDGMENT_CHUNK` and 332 `BOOK_CHUNK`
   - all production embeddings are 1536-dimensional local hash embeddings
+  - legal book migration completed: 3 books, 26 chapters, 332 chunks
+  - production extraction completed: 25 outcomes, 125 case issues, 221 case-section rows and 25 case facts
+  - production citation graph completed: 344 citation strings, 348 case citations and 348 citation edges; 0 resolved-to-local cited cases in current 25-judgment corpus
   - API search/admin/chat status now prefer PostgreSQL retrieval and fall back to SQLite only when PostgreSQL is unavailable
   - duplicate source-document/case checks returned 0
-  - 25 decided cases have no `outcomes` rows yet; production AI outcome migration/extraction remains future work
+  - quality checks are clean: 0 judgments without text, 0 impossible dates, 0 decided cases without outcomes, 0 duplicate PDF hashes, 0 wrong-dimension embeddings, 0 unvalidated AI facts
 
 ## Built So Far
 
@@ -143,7 +146,19 @@ Last checked from Codex on 2026-06-03.
   - production full-text lexical search over sections, judgments and book chunks
   - production pgvector semantic search over section, judgment chunk and book chunk embeddings
   - hybrid search merges production lexical and semantic results
-  - active `F:\indian-legal-database` PostgreSQL has 6,613 production embeddings
+  - active `F:\indian-legal-database` PostgreSQL has 6,945 production embeddings
+
+- Production extraction/outcomes:
+  - `legal_db.ai.production.extract_production_judgments()`
+  - `scripts/extract_pg_judgments.py`
+  - populates `outcomes`, `case_issues`, `case_sections`, `case_facts` and `extraction_runs`
+  - active `F:\indian-legal-database` PostgreSQL has 25 extracted judgments and 25 outcomes
+
+- Production citation graph:
+  - `legal_db.citations.graph.build_production_citation_graph()`
+  - `scripts/build_pg_citations.py`
+  - populates `citation_strings`, `case_citations` and `citations`
+  - active `F:\indian-legal-database` PostgreSQL has 348 citation edges
 
 - Local extraction model MVP:
   - `legal_db.ai.extract.local_extract_judgment()`
@@ -212,7 +227,7 @@ Last checked from Codex on 2026-06-03.
 - WSL/Docker/PostgreSQL are now unblocked in the `F:\indian-legal-database` checkout.
 - PostgreSQL/pgvector production import for current staging statutes/sections/judgments is complete.
 - Do not pull `llama3.1:8b`; continue with `llama3.2:3b` default and `llama3.2:1b` fallback.
-- Remaining production gaps: outcomes, production extraction records, legal books/material import, High Court collectors at scale, Gazette ingestion, citation graph and frontend/admin UI.
+- Remaining production gaps: High Court collectors at scale, Gazette ingestion, frontend/admin UI, live deployment/monitoring and much larger corpus scale.
 
 ## Verification Last Known Good
 
@@ -221,17 +236,17 @@ python -m compileall apps legal_db scripts tests
 python -m unittest discover -s tests -v
 ```
 
-Last known test count: 47 passing on 2026-06-03.
+Last known test count: 51 passing on 2026-06-03.
 
 ## Next Build Slice
 
 Continue the data/backend scale path:
 
-1. Build/run production extraction/outcome import for the 25 imported judgments.
-2. Import the 3 legal books/materials, 26 chapters and 332 chunks from staging into PostgreSQL.
-3. Collect saved official DOJ/Delhi/Bombay result HTML and generate manifests with `scripts/generate_hc_manifest.py`.
-4. Ingest generated manifests with `scripts/ingest_judgments.py`.
-5. Run OCR/extraction/embedding scripts over the expanded corpus.
+1. Collect saved official DOJ/Delhi/Bombay result HTML and generate manifests with `scripts/generate_hc_manifest.py`.
+2. Ingest generated manifests with `scripts/ingest_judgments.py`.
+3. Run production migration, extraction, citation and embedding scripts over the expanded corpus.
+4. Build basic citizen/admin frontend pages over the existing API.
+5. Add Gazette ingestion for commencement/effective-date data.
 6. Keep source/docs changes only; do not commit raw PDFs, local manifests or SQLite.
 
 ## After That

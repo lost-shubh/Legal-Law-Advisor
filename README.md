@@ -27,6 +27,8 @@ Completed so far:
 - Chat readiness status that checks both the selected Ollama model and legal corpus availability.
 - Case analyzer MVP that detects issue tags, dates, evidence categories, missing documents, urgency warnings and related legal context.
 - Production pgvector retrieval with local deterministic 1536-dimensional embeddings for imported sections and judgment chunks.
+- Production local extraction that populates outcomes, issues, facts and cited sections for migrated judgments.
+- Production citation graph builder for extracted judgment citations.
 - Judgment ingestion tracking with job/item status, manifest ingestion, PDF hashing, raw PDF storage path, case/judgment inserts and optional text extraction.
 - Supreme Court/e-SCR manifest generator that parses saved SCR/e-SCR result HTML or accessible result pages into standard judgment manifests.
 - Saved-result HTML manifest generator for DOJ, Delhi High Court and Bombay High Court result pages.
@@ -44,16 +46,17 @@ Legal materials:   3
 Book chapters:     26
 Book chunks:       332
 Document texts:    44
-Embedding chunks:  6,613 production pgvector rows plus 649 local staging chunks
-Extractions:       25 local staging judgment extractions
-Test suite:        47 passing tests
+Embedding chunks:  6,945 production pgvector rows plus 649 local staging chunks
+Extractions:       25 production outcomes/facts plus 25 local staging judgment extractions
+Citation edges:    348
+Test suite:        51 passing tests
 ```
 
 Main work still left:
 
 - Ingest the first `1,000` official judgments, then scale toward `10,000`.
 - Run source-specific collectors at scale for High Courts, DOJ judgment portal and district/eCourts data.
-- Run OCR and AI extraction at scale.
+- Run OCR and AI extraction at scale for new batches.
 - Replace deterministic local production embeddings with stronger OpenAI or local embedding models when practical.
 - Build the citizen frontend, lawyer review app and admin dashboard.
 - Deploy the production PostgreSQL/pgvector stack and add operational monitoring.
@@ -148,6 +151,13 @@ Build production PostgreSQL/pgvector embeddings:
 
 ```powershell
 python .\scripts\build_pg_embeddings.py --database-url "postgresql+psycopg2://legal:legal@localhost:5432/legaldb" --replace
+```
+
+Run production extraction and citation graph:
+
+```powershell
+python .\scripts\extract_pg_judgments.py --database-url "postgresql+psycopg2://legal:legal@localhost:5432/legaldb"
+python .\scripts\build_pg_citations.py --database-url "postgresql+psycopg2://legal:legal@localhost:5432/legaldb"
 ```
 
 Run local judgment extraction:
