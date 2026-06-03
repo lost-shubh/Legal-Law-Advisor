@@ -89,6 +89,14 @@ Last checked from Codex on 2026-06-03.
   - ingestion jobs/items
   - quality/canary tables
 
+- Local folder ingestion for user-provided PDF libraries:
+  - `legal_db.ingest.local_documents`
+  - `scripts/ingest_local_documents.py`
+  - imports PDFs into PostgreSQL `source_documents`, `legal_books`, `book_chapters` and `book_chunks`
+  - supports dry-run before database writes
+  - skips unsupported files and obvious personal/non-legal PDFs by default
+  - raw PDFs stay local-only and must not be committed
+
 - FastAPI routes:
   - `GET /` local browser app
   - `GET /health`
@@ -270,7 +278,7 @@ python -m compileall apps legal_db scripts tests
 python -m unittest discover -s tests -v
 ```
 
-Last known test count: 60 passing on 2026-06-03.
+Last known test count: 63 passing on 2026-06-03.
 
 ## Next Build Slice
 

@@ -176,6 +176,16 @@ Parse and store an e-Gazette notification from OCR/plain text:
 python .\scripts\ingest_gazette.py --text-file .\data\source_exports\gazette_notice.txt --source-url "https://egazette.gov.in/..."
 ```
 
+Ingest a local folder of user-provided PDF legal documents into PostgreSQL:
+
+```powershell
+python .\scripts\ingest_local_documents.py "C:\Users\Admin\Downloads\New folder (3)" --dry-run
+python .\scripts\ingest_local_documents.py "C:\Users\Admin\Downloads\New folder (3)" --source-code LOCAL_LIBRARY --source-name "Local User Document Library"
+python .\scripts\build_pg_embeddings.py --source-type BOOK_CHUNK --replace
+```
+
+Raw local PDFs stay out of git. The importer skips obvious personal/non-legal files unless `--include-personal` is passed.
+
 Run local judgment extraction:
 
 ```powershell
