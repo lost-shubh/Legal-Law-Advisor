@@ -17,6 +17,18 @@ class ApiAppTest(unittest.TestCase):
         self.assertEqual(payload["status"], "ok")
         self.assertEqual(payload["service"], "legal-api")
 
+    def test_local_browser_app_route_is_available(self) -> None:
+        from fastapi.testclient import TestClient
+
+        from legal_api.main import app
+
+        client = TestClient(app)
+        response = client.get("/")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("Legal Law Advisor", response.text)
+        self.assertIn("Case Analyzer", response.text)
+        self.assertIn("/v1/cases/analyze", response.text)
+
     def test_fastapi_search_route_without_llm(self) -> None:
         from fastapi.testclient import TestClient
 

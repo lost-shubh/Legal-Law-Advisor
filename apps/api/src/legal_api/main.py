@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 from legal_db.case_intake.pipeline import CaseIntakePipeline
 from legal_db.admin.production import (
     production_admin_panels,
@@ -58,8 +60,14 @@ def health() -> dict[str, str]:
 
 try:
     from fastapi import FastAPI
+    from fastapi.responses import HTMLResponse
 
     app = FastAPI(title="Legal Law Advisor API", version="0.1.0")
+
+    @app.get("/", response_class=HTMLResponse)
+    def local_app_route() -> HTMLResponse:
+        index_path = Path(__file__).resolve().parent / "ui" / "index.html"
+        return HTMLResponse(index_path.read_text(encoding="utf-8"))
 
     @app.get("/health")
     def health_route() -> dict[str, str]:

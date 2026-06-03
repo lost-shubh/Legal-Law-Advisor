@@ -228,9 +228,16 @@ $env:PYTHONPATH="F:\indian-legal-database;F:\indian-legal-database\apps\api\src"
 uvicorn legal_api.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
+Local browser app:
+
+```text
+http://127.0.0.1:8000/
+```
+
 Useful API routes:
 
 ```text
+GET  /
 GET  /v1/ingestion/status
 GET  /v1/admin/corpus
 GET  /v1/admin/overview

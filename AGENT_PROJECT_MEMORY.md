@@ -90,6 +90,7 @@ Last checked from Codex on 2026-06-03.
   - quality/canary tables
 
 - FastAPI routes:
+  - `GET /` local browser app
   - `GET /health`
   - `GET /health/deep`
   - `GET /v1/admin/overview`
@@ -189,6 +190,16 @@ Last checked from Codex on 2026-06-03.
   - `scripts/run_backend_maintenance.py`
   - safe when optional staging tables are missing
 
+- Local browser app:
+  - served directly by FastAPI at `GET /`
+  - source file: `apps/api/src/legal_api/ui/index.html`
+  - case analyzer screen calls `/v1/cases/analyze` and `/v1/similar-cases`
+  - search screen calls `/v1/search` with lexical, semantic and hybrid modes
+  - chat screen calls `/v1/chat/status` and `/v1/chat`
+  - admin screen calls `/v1/admin/panels`
+  - Gazette screen calls `/v1/gazette/notifications`
+  - no Node/Vite frontend server is required for the current local MVP UI
+
 - Gazette backend:
   - `legal_db.ingest.gazette.upsert_gazette_notification()`
   - `scripts/ingest_gazette.py`
@@ -257,7 +268,7 @@ python -m compileall apps legal_db scripts tests
 python -m unittest discover -s tests -v
 ```
 
-Last known test count: 57 passing on 2026-06-03.
+Last known test count: 58 passing on 2026-06-03.
 
 ## Next Build Slice
 
@@ -267,7 +278,7 @@ Continue the data/UI scale path:
 2. Ingest generated manifests with `scripts/ingest_judgments.py`.
 3. Run production migration, extraction, citation and embedding scripts over the expanded corpus.
 4. Feed official e-Gazette OCR/plain text into `scripts/ingest_gazette.py` for BNS/BNSS/BSA and other priority commencement/amendment notices.
-5. Build basic citizen/admin frontend pages over the existing API.
+5. Expand the browser app only after new backend/corpus data is available; the current local UI already exposes case analysis, search, chat, admin and Gazette screens.
 6. Keep source/docs changes only; do not commit raw PDFs, local manifests or SQLite.
 
 ## After That

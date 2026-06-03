@@ -1,0 +1,708 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Legal Law Advisor</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f6f4;
+      --surface: #ffffff;
+      --surface-2: #eef2f1;
+      --ink: #1c2521;
+      --muted: #617068;
+      --line: #d6ded9;
+      --accent: #1f6f68;
+      --accent-2: #9a3f2f;
+      --focus: #d69b2d;
+      --ok: #27734d;
+      --warn: #a25f13;
+      --bad: #aa3434;
+      --radius: 8px;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--ink); }
+    body { overflow-x: hidden; }
+    button, textarea, input, select { font: inherit; }
+    button {
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--ink);
+      border-radius: 6px;
+      cursor: pointer;
+      min-height: 38px;
+      padding: 0 12px;
+    }
+    button:hover { border-color: var(--accent); color: var(--accent); }
+    button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    button.primary:hover { background: #17534e; color: #fff; }
+    button.ghost { background: transparent; }
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fff;
+      color: var(--ink);
+      padding: 10px 11px;
+    }
+    textarea { min-height: 220px; resize: vertical; line-height: 1.45; }
+    label { color: var(--muted); font-size: 0.82rem; font-weight: 700; display: block; margin-bottom: 6px; }
+    .app {
+      display: grid;
+      grid-template-columns: 260px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+    .sidebar {
+      border-right: 1px solid var(--line);
+      background: #fbfcfb;
+      padding: 18px 14px;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+    }
+    .brand { padding: 4px 8px 16px; border-bottom: 1px solid var(--line); margin-bottom: 16px; }
+    .brand h1 { font-size: 1.08rem; margin: 0 0 6px; letter-spacing: 0; }
+    .brand p { color: var(--muted); margin: 0; font-size: 0.82rem; line-height: 1.35; }
+    .tabs { display: grid; gap: 6px; }
+    .tab {
+      width: 100%;
+      text-align: left;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--ink);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .tab.active { background: var(--surface-2); border-color: var(--line); color: var(--accent); }
+    .tab .hint { color: var(--muted); font-size: 0.72rem; }
+    .status-strip { margin-top: 18px; display: grid; gap: 8px; }
+    .status-pill {
+      border: 1px solid var(--line);
+      background: var(--surface);
+      border-radius: 6px;
+      padding: 9px 10px;
+      color: var(--muted);
+      font-size: 0.78rem;
+      min-height: 38px;
+    }
+    .status-pill strong { color: var(--ink); display: block; font-size: 0.92rem; }
+    main { min-width: 0; }
+    .topbar {
+      min-height: 64px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(245, 246, 244, 0.92);
+      backdrop-filter: blur(12px);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 0 22px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .topbar h2 { margin: 0; font-size: 1.05rem; letter-spacing: 0; }
+    .topbar .actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+    .view { display: none; padding: 22px; max-width: 1320px; margin: 0 auto; }
+    .view.active { display: block; }
+    .grid { display: grid; gap: 16px; }
+    .grid.two { grid-template-columns: minmax(320px, 0.95fr) minmax(360px, 1.05fr); align-items: start; }
+    .grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 16px;
+      min-width: 0;
+    }
+    .panel h3 { margin: 0 0 12px; font-size: 0.98rem; letter-spacing: 0; }
+    .form-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 12px; }
+    .inline-controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .checkbox {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-weight: 700;
+      font-size: 0.84rem;
+    }
+    .checkbox input { width: 16px; height: 16px; padding: 0; }
+    .result-list { display: grid; gap: 10px; }
+    .result {
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      padding: 12px;
+      background: #fff;
+    }
+    .result h4 { margin: 0 0 6px; font-size: 0.95rem; line-height: 1.3; }
+    .result p { margin: 0; color: var(--muted); line-height: 1.45; font-size: 0.9rem; overflow-wrap: anywhere; }
+    .meta { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 9px; color: var(--muted); font-size: 0.78rem; }
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      min-height: 24px;
+      padding: 2px 8px;
+      background: var(--surface-2);
+      color: var(--ink);
+      font-size: 0.74rem;
+      font-weight: 700;
+      max-width: 100%;
+    }
+    .tag.ok { color: var(--ok); }
+    .tag.warn { color: var(--warn); }
+    .tag.bad { color: var(--bad); }
+    .metric {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 14px;
+      min-height: 92px;
+    }
+    .metric .value { font-size: 1.55rem; font-weight: 800; line-height: 1; margin-bottom: 8px; }
+    .metric .label { color: var(--muted); font-size: 0.78rem; font-weight: 700; }
+    .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 7px; background: #fff; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.84rem; min-width: 680px; }
+    th, td { border-bottom: 1px solid var(--line); padding: 9px 10px; text-align: left; vertical-align: top; }
+    th { color: var(--muted); background: #f7f8f7; font-size: 0.76rem; }
+    tr:last-child td { border-bottom: 0; }
+    .answer {
+      white-space: pre-wrap;
+      line-height: 1.55;
+      color: var(--ink);
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      padding: 14px;
+      min-height: 110px;
+    }
+    .empty {
+      color: var(--muted);
+      border: 1px dashed var(--line);
+      border-radius: 7px;
+      padding: 14px;
+      background: #fff;
+    }
+    .error {
+      color: var(--bad);
+      border: 1px solid #e2b9b9;
+      background: #fff8f8;
+      border-radius: 7px;
+      padding: 12px;
+      overflow-wrap: anywhere;
+    }
+    .loading { opacity: 0.7; pointer-events: none; }
+    .footer-line { color: var(--muted); font-size: 0.78rem; margin-top: 12px; line-height: 1.4; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    @media (max-width: 920px) {
+      .app { grid-template-columns: 1fr; }
+      .sidebar { position: relative; height: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+      .tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .topbar { position: relative; padding: 14px 16px; align-items: flex-start; flex-direction: column; }
+      .view { padding: 16px; }
+      .grid.two, .grid.three, .form-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <h1>Legal Law Advisor</h1>
+        <p>Local legal research workspace</p>
+      </div>
+      <nav class="tabs" aria-label="Workspace">
+        <button class="tab active" data-view="case"><span>Case</span><span class="hint">analyze</span></button>
+        <button class="tab" data-view="search"><span>Search</span><span class="hint">corpus</span></button>
+        <button class="tab" data-view="chat"><span>Chat</span><span class="hint">rag</span></button>
+        <button class="tab" data-view="admin"><span>Admin</span><span class="hint">status</span></button>
+        <button class="tab" data-view="gazette"><span>Gazette</span><span class="hint">notice</span></button>
+      </nav>
+      <div class="status-strip">
+        <div class="status-pill"><strong id="sideStatus">Checking</strong><span>service</span></div>
+        <div class="status-pill"><strong id="sideJudgments">--</strong><span>judgments</span></div>
+        <div class="status-pill"><strong id="sideQuality">--</strong><span>quality gate</span></div>
+      </div>
+    </aside>
+
+    <main>
+      <header class="topbar">
+        <h2 id="viewTitle">Case Analyzer</h2>
+        <div class="actions">
+          <button class="ghost" id="refreshBtn" type="button">Refresh</button>
+          <a href="/docs" target="_blank" rel="noreferrer"><button type="button">API Docs</button></a>
+        </div>
+      </header>
+
+      <section class="view active" id="view-case">
+        <div class="grid two">
+          <div class="panel">
+            <h3>Case Facts</h3>
+            <textarea id="caseText">A cheque was dishonoured by the bank. Legal notice was sent within limitation. The accused did not repay the amount. The complainant has the cheque, bank return memo, and notice delivery proof.</textarea>
+            <div class="form-row">
+              <div>
+                <label for="caseContext">Context Limit</label>
+                <input id="caseContext" type="number" min="1" max="10" value="5">
+              </div>
+              <div>
+                <label for="similarLimit">Similar Limit</label>
+                <input id="similarLimit" type="number" min="1" max="20" value="5">
+              </div>
+              <div>
+                <label>LLM</label>
+                <span class="checkbox"><input id="caseUseLlm" type="checkbox"> use local model</span>
+              </div>
+            </div>
+            <div class="inline-controls">
+              <button class="primary" id="analyzeBtn" type="button">Analyze Case</button>
+              <button id="similarBtn" type="button">Similar Cases</button>
+            </div>
+            <div class="footer-line">Private facts stay on this local machine unless you send them elsewhere yourself.</div>
+          </div>
+          <div class="grid">
+            <div class="panel">
+              <h3>Analysis</h3>
+              <div id="caseOutput" class="empty">No analysis yet.</div>
+            </div>
+            <div class="panel">
+              <h3>Related Results</h3>
+              <div id="caseResults" class="result-list"><div class="empty">No related results yet.</div></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="view" id="view-search">
+        <div class="panel">
+          <h3>Corpus Search</h3>
+          <div class="form-row">
+            <div>
+              <label for="searchQuery">Query</label>
+              <input id="searchQuery" value="cheque dishonour legal notice">
+            </div>
+            <div>
+              <label for="searchMode">Mode</label>
+              <select id="searchMode">
+                <option value="hybrid">hybrid</option>
+                <option value="semantic">semantic</option>
+                <option value="lexical">lexical</option>
+              </select>
+            </div>
+            <div>
+              <label for="searchLimit">Limit</label>
+              <input id="searchLimit" type="number" min="1" max="50" value="10">
+            </div>
+          </div>
+          <div class="inline-controls">
+            <button class="primary" id="searchBtn" type="button">Search</button>
+            <button id="searchSectionsBtn" type="button">Sections Only</button>
+            <button id="searchJudgmentsBtn" type="button">Judgments Only</button>
+          </div>
+        </div>
+        <div class="panel" style="margin-top:16px">
+          <h3>Results</h3>
+          <div id="searchResults" class="result-list"><div class="empty">No search results yet.</div></div>
+        </div>
+      </section>
+
+      <section class="view" id="view-chat">
+        <div class="grid two">
+          <div class="panel">
+            <h3>Question</h3>
+            <textarea id="chatQuestion" style="min-height:150px">What documents are needed for a cheque bounce case?</textarea>
+            <div class="form-row">
+              <div>
+                <label for="chatContext">Context Limit</label>
+                <input id="chatContext" type="number" min="1" max="10" value="5">
+              </div>
+              <div>
+                <label>LLM</label>
+                <span class="checkbox"><input id="chatUseLlm" type="checkbox" checked> use local model</span>
+              </div>
+              <div>
+                <label>Status</label>
+                <button id="chatStatusBtn" type="button">Check Chat</button>
+              </div>
+            </div>
+            <button class="primary" id="chatBtn" type="button">Ask</button>
+          </div>
+          <div class="grid">
+            <div class="panel">
+              <h3>Answer</h3>
+              <div id="chatAnswer" class="answer">No answer yet.</div>
+            </div>
+            <div class="panel">
+              <h3>Sources</h3>
+              <div id="chatSources" class="result-list"><div class="empty">No sources yet.</div></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="view" id="view-admin">
+        <div class="grid three" id="adminMetrics">
+          <div class="metric"><div class="value">--</div><div class="label">loading</div></div>
+        </div>
+        <div class="grid two" style="margin-top:16px">
+          <div class="panel">
+            <h3>Quality Checks</h3>
+            <div id="qualityTable" class="table-wrap"></div>
+          </div>
+          <div class="panel">
+            <h3>Operations</h3>
+            <div id="operationsTable" class="table-wrap"></div>
+          </div>
+        </div>
+        <div class="panel" style="margin-top:16px">
+          <h3>Source Health</h3>
+          <div id="sourcesTable" class="table-wrap"></div>
+        </div>
+      </section>
+
+      <section class="view" id="view-gazette">
+        <div class="grid two">
+          <div class="panel">
+            <h3>Gazette Notice</h3>
+            <textarea id="gazetteText">MINISTRY OF HOME AFFAIRS S.O. 850(E). The Bharatiya Nyaya Sanhita, 2023 shall come into force on the 1st day of July, 2024.</textarea>
+            <div class="form-row">
+              <div>
+                <label for="gazetteUrl">Source URL</label>
+                <input id="gazetteUrl" placeholder="https://egazette.gov.in/...">
+              </div>
+              <div>
+                <label>Effective Dates</label>
+                <span class="checkbox"><input id="gazetteUpdateDates" type="checkbox" checked> update records</span>
+              </div>
+              <div>
+                <label>Action</label>
+                <button class="primary" id="gazetteBtn" type="button">Save Notice</button>
+              </div>
+            </div>
+          </div>
+          <div class="panel">
+            <h3>Saved Notice</h3>
+            <div id="gazetteOutput" class="empty">No notice saved yet.</div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const state = { sourceFilter: null };
+    const titles = {
+      case: "Case Analyzer",
+      search: "Corpus Search",
+      chat: "Local Chat",
+      admin: "Admin Dashboard",
+      gazette: "Gazette Ingestion"
+    };
+
+    const $ = (id) => document.getElementById(id);
+    const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (ch) => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+    }[ch]));
+    const number = (value) => Number(value || 0).toLocaleString("en-IN");
+
+    async function api(path, options = {}) {
+      const response = await fetch(path, {
+        headers: { "Content-Type": "application/json" },
+        ...options
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(payload.detail || payload.error || `${response.status} ${response.statusText}`);
+      }
+      return payload;
+    }
+
+    function setBusy(element, busy) {
+      if (!element) return;
+      element.classList.toggle("loading", busy);
+      element.disabled = busy;
+    }
+
+    function renderError(target, error) {
+      target.innerHTML = `<div class="error">${escapeHtml(error.message || error)}</div>`;
+    }
+
+    function tags(values) {
+      if (!values || !values.length) return "";
+      return values.map((value) => `<span class="tag">${escapeHtml(value)}</span>`).join(" ");
+    }
+
+    function renderResults(target, results) {
+      if (!results || !results.length) {
+        target.innerHTML = `<div class="empty">No matches.</div>`;
+        return;
+      }
+      target.innerHTML = results.map((item) => {
+        const title = item.title || item.case_title || "Untitled result";
+        const type = item.source_type || "CASE";
+        const score = item.score === undefined ? "" : `<span class="tag">score ${Number(item.score).toFixed(3)}</span>`;
+        const source = item.source_url || item.pdf_url;
+        return `
+          <article class="result">
+            <h4>${escapeHtml(title)}</h4>
+            <p>${escapeHtml(item.snippet || "")}</p>
+            <div class="meta">
+              <span class="tag">${escapeHtml(type)}</span>
+              ${score}
+              ${item.decision_date ? `<span>${escapeHtml(item.decision_date)}</span>` : ""}
+              ${source ? `<a href="${escapeHtml(source)}" target="_blank" rel="noreferrer">source</a>` : ""}
+            </div>
+          </article>
+        `;
+      }).join("");
+    }
+
+    function renderAnalysis(payload) {
+      const analysis = payload.analysis || {};
+      const blocks = [
+        ["Issue Tags", tags(analysis.issue_tags || []) || "<span class='tag warn'>none</span>"],
+        ["Evidence", tags(analysis.evidence_categories || []) || "<span class='tag warn'>none</span>"],
+        ["Missing", tags(analysis.missing_documents || []) || "<span class='tag ok'>none detected</span>"],
+        ["Urgency", tags(analysis.urgency_warnings || []) || "<span class='tag ok'>none detected</span>"],
+        ["Dates", tags(analysis.dates_detected || []) || "<span class='tag warn'>none</span>"]
+      ];
+      $("caseOutput").innerHTML = blocks.map(([label, value]) => `
+        <div class="result">
+          <h4>${label}</h4>
+          <p>${value}</p>
+        </div>
+      `).join("") + (payload.llm_note ? `<div class="answer">${escapeHtml(payload.llm_note)}</div>` : "");
+      renderResults($("caseResults"), payload.retrieved_results || []);
+    }
+
+    async function analyzeCase() {
+      const btn = $("analyzeBtn");
+      setBusy(btn, true);
+      $("caseOutput").innerHTML = `<div class="empty">Analyzing...</div>`;
+      try {
+        const payload = await api("/v1/cases/analyze", {
+          method: "POST",
+          body: JSON.stringify({
+            case_text: $("caseText").value,
+            context_limit: Number($("caseContext").value || 5),
+            use_llm: $("caseUseLlm").checked
+          })
+        });
+        renderAnalysis(payload);
+      } catch (error) {
+        renderError($("caseOutput"), error);
+      } finally {
+        setBusy(btn, false);
+      }
+    }
+
+    async function similarCases() {
+      const btn = $("similarBtn");
+      setBusy(btn, true);
+      $("caseResults").innerHTML = `<div class="empty">Searching...</div>`;
+      try {
+        const payload = await api("/v1/similar-cases", {
+          method: "POST",
+          body: JSON.stringify({
+            case_text: $("caseText").value,
+            limit: Number($("similarLimit").value || 5)
+          })
+        });
+        renderResults($("caseResults"), payload.results || []);
+      } catch (error) {
+        renderError($("caseResults"), error);
+      } finally {
+        setBusy(btn, false);
+      }
+    }
+
+    async function runSearch(filter = null) {
+      state.sourceFilter = filter;
+      const btn = $("searchBtn");
+      setBusy(btn, true);
+      $("searchResults").innerHTML = `<div class="empty">Searching...</div>`;
+      try {
+        const payload = await api("/v1/search", {
+          method: "POST",
+          body: JSON.stringify({
+            query: $("searchQuery").value,
+            mode: $("searchMode").value,
+            limit: Number($("searchLimit").value || 10),
+            source_types: filter
+          })
+        });
+        renderResults($("searchResults"), payload.results || []);
+      } catch (error) {
+        renderError($("searchResults"), error);
+      } finally {
+        setBusy(btn, false);
+      }
+    }
+
+    async function checkChatStatus() {
+      const target = $("chatAnswer");
+      target.textContent = "Checking chat status...";
+      try {
+        const payload = await api("/v1/chat/status");
+        target.textContent = JSON.stringify(payload, null, 2);
+      } catch (error) {
+        renderError(target, error);
+      }
+    }
+
+    async function askChat() {
+      const btn = $("chatBtn");
+      setBusy(btn, true);
+      $("chatAnswer").textContent = "Working...";
+      try {
+        const payload = await api("/v1/chat", {
+          method: "POST",
+          body: JSON.stringify({
+            question: $("chatQuestion").value,
+            context_limit: Number($("chatContext").value || 5),
+            use_llm: $("chatUseLlm").checked
+          })
+        });
+        $("chatAnswer").textContent = payload.answer || payload.error || "No answer returned.";
+        renderResults($("chatSources"), payload.retrieved_results || []);
+      } catch (error) {
+        renderError($("chatAnswer"), error);
+      } finally {
+        setBusy(btn, false);
+      }
+    }
+
+    function renderMetrics(counts) {
+      const metrics = [
+        ["Judgments", counts.judgments],
+        ["Sections", counts.sections],
+        ["Embeddings", counts.embeddings],
+        ["Books", counts.legal_books],
+        ["Citations", counts.citations],
+        ["Gazette", counts.gazette_notifications]
+      ];
+      $("adminMetrics").innerHTML = metrics.map(([label, value]) => `
+        <div class="metric"><div class="value">${number(value)}</div><div class="label">${label}</div></div>
+      `).join("");
+    }
+
+    function renderTable(target, columns, rows) {
+      if (!rows || !rows.length) {
+        target.innerHTML = `<div class="empty">No rows.</div>`;
+        return;
+      }
+      target.innerHTML = `
+        <table>
+          <thead><tr>${columns.map((col) => `<th>${escapeHtml(col.label)}</th>`).join("")}</tr></thead>
+          <tbody>
+            ${rows.map((row) => `<tr>${columns.map((col) => {
+              const value = col.render ? col.render(row) : row[col.key];
+              return `<td>${value === undefined || value === null ? "" : escapeHtml(value)}</td>`;
+            }).join("")}</tr>`).join("")}
+          </tbody>
+        </table>
+      `;
+    }
+
+    async function refreshAdmin() {
+      try {
+        const payload = await api("/v1/admin/panels");
+        const counts = payload.corpus?.counts || {};
+        renderMetrics(counts);
+        renderTable($("qualityTable"), [
+          { key: "name", label: "Check" },
+          { key: "severity", label: "Severity" },
+          { key: "count", label: "Count" },
+          { label: "Status", render: (row) => row.passed ? "passed" : "failed" }
+        ], payload.quality?.checks || []);
+        renderTable($("operationsTable"), [
+          { key: "key", label: "Queue" },
+          { key: "value", label: "Count" }
+        ], Object.entries(payload.operations?.queues || {}).map(([key, value]) => ({ key, value })));
+        renderTable($("sourcesTable"), [
+          { key: "source_code", label: "Source" },
+          { key: "source_type", label: "Type" },
+          { key: "source_documents", label: "Docs" },
+          { key: "parsed_documents", label: "Parsed" },
+          { key: "failed_documents", label: "Failed" },
+          { key: "last_document_created_at", label: "Latest" }
+        ], payload.sources?.sources || []);
+      } catch (error) {
+        $("adminMetrics").innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`;
+      }
+    }
+
+    async function saveGazette() {
+      const btn = $("gazetteBtn");
+      setBusy(btn, true);
+      $("gazetteOutput").innerHTML = `<div class="empty">Saving...</div>`;
+      try {
+        const sourceUrl = $("gazetteUrl").value.trim();
+        const payload = await api("/v1/gazette/notifications", {
+          method: "POST",
+          body: JSON.stringify({
+            text: $("gazetteText").value,
+            source_url: sourceUrl || null,
+            update_effective_dates: $("gazetteUpdateDates").checked
+          })
+        });
+        $("gazetteOutput").innerHTML = `
+          <div class="result">
+            <h4>${escapeHtml(payload.act_name || "Notification")}</h4>
+            <p>${escapeHtml(payload.notification_type || "")} ${escapeHtml(payload.notification_date || "")}</p>
+            <div class="meta">
+              <span class="tag">id ${escapeHtml(payload.notification_id || "not saved")}</span>
+              <span class="tag">statute ${escapeHtml(payload.statute_id || "unmatched")}</span>
+              <span class="tag">sections ${escapeHtml((payload.sections_affected || []).length)}</span>
+              ${payload.error ? `<span class="tag bad">${escapeHtml(payload.error)}</span>` : ""}
+            </div>
+          </div>
+        `;
+      } catch (error) {
+        renderError($("gazetteOutput"), error);
+      } finally {
+        setBusy(btn, false);
+      }
+    }
+
+    async function refreshShell() {
+      try {
+        const health = await api("/health/deep");
+        const corpus = health.corpus || {};
+        const counts = corpus.counts || corpus;
+        $("sideStatus").textContent = health.status || "ok";
+        $("sideJudgments").textContent = number(counts.judgments);
+        $("sideQuality").textContent = health.quality_gate_passed ? "passed" : "needs review";
+      } catch (error) {
+        $("sideStatus").textContent = "offline";
+        $("sideQuality").textContent = "unknown";
+      }
+    }
+
+    function switchView(name) {
+      document.querySelectorAll(".tab").forEach((tab) => tab.classList.toggle("active", tab.dataset.view === name));
+      document.querySelectorAll(".view").forEach((view) => view.classList.toggle("active", view.id === `view-${name}`));
+      $("viewTitle").textContent = titles[name] || "Legal Law Advisor";
+      if (name === "admin") refreshAdmin();
+    }
+
+    document.querySelectorAll(".tab").forEach((tab) => tab.addEventListener("click", () => switchView(tab.dataset.view)));
+    $("refreshBtn").addEventListener("click", () => { refreshShell(); refreshAdmin(); });
+    $("analyzeBtn").addEventListener("click", analyzeCase);
+    $("similarBtn").addEventListener("click", similarCases);
+    $("searchBtn").addEventListener("click", () => runSearch(state.sourceFilter));
+    $("searchSectionsBtn").addEventListener("click", () => runSearch(["SECTION"]));
+    $("searchJudgmentsBtn").addEventListener("click", () => runSearch(["JUDGMENT"]));
+    $("chatStatusBtn").addEventListener("click", checkChatStatus);
+    $("chatBtn").addEventListener("click", askChat);
+    $("gazetteBtn").addEventListener("click", saveGazette);
+    refreshShell();
+  </script>
+</body>
+</html>

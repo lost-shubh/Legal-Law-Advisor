@@ -15,6 +15,7 @@ Backend API for the Legal Law Advisor platform.
 ## Planned Routes
 
 ```text
+GET  /
 GET  /health
 GET  /health/deep
 POST /v1/chat
@@ -39,5 +40,5 @@ POST /v1/gazette/notifications
 
 ## Implementation Note
 
-Use FastAPI for the Python MVP. Keep route handlers thin and call service modules under `services/` or `legal_db/`.
+Use FastAPI for the Python MVP. The local browser app is served at `/` from `legal_api/ui/index.html`, and the API remains available through `/docs` and the `/v1/*` routes. Keep route handlers thin and call service modules under `services/` or `legal_db/`.
 
