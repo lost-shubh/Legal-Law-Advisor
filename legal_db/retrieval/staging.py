@@ -158,6 +158,7 @@ class StagingRetrievalService:
                 "book_chunks": count_if_exists(conn, "book_chunks"),
                 "cases": count_if_exists(conn, "cases"),
                 "staging_embeddings": count_if_exists(conn, "staging_embeddings"),
+                "staging_extractions": count_if_exists(conn, "staging_extractions"),
             }
 
     def search(

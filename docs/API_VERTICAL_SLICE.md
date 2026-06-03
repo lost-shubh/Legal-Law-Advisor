@@ -13,14 +13,18 @@ uvicorn legal_api.main:app --reload --host 127.0.0.1 --port 8000
 
 ```text
 GET  /health
+GET  /v1/admin/overview
 GET  /v1/corpus/progress
 GET  /v1/ingestion/status
 GET  /v1/models/ollama
+GET  /v1/models/extraction
 GET  /v1/chat/status
+GET  /v1/extractions/status
 POST /v1/search
 POST /v1/chat
 POST /v1/cases/analyze
 POST /v1/similar-cases
+POST /v1/extractions/judgments
 ```
 
 ## Search
@@ -55,6 +59,14 @@ GET /v1/ingestion/status
 ```
 
 Returns ingestion job totals, item status totals, and recent jobs. This powers the future admin corpus dashboard and is backed by the same tracker used by `scripts/ingest_judgments.py`.
+
+## Admin Overview
+
+```text
+GET /v1/admin/overview
+```
+
+Read-only operations summary for the future admin UI. It combines corpus progress, ingestion status, extraction status, Ollama model status and extraction model status in one response. It is safe when the staging database or optional tables are missing.
 
 ## Chat
 
@@ -116,6 +128,25 @@ POST /v1/cases/analyze
 ```
 
 This route performs a deterministic first pass over the case text, detects likely legal domains, extracts dates and evidence categories, lists missing documents, retrieves related corpus material, and optionally asks the local Ollama model for a lawyer-ready intake note.
+
+## Judgment Extraction Model
+
+```text
+GET  /v1/models/extraction
+GET  /v1/extractions/status
+POST /v1/extractions/judgments
+```
+
+The extraction backend has a local deterministic model, `local-rule-extractor-v1`, so staging judgment extraction can run without hosted model credentials. It extracts acts cited, sections cited, issue tags, timeline hints, allegations, defence/evidence/argument snippets, citations and outcome.
+
+Run locally:
+
+```powershell
+python .\scripts\extract_staging_judgments.py
+python .\scripts\extract_staging_judgments.py --status
+```
+
+The hosted extraction model path remains available through `extract_with_openai()` for production use once credentials and review workflows are configured.
 
 ## Similar Cases
 

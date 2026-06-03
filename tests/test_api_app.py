@@ -42,6 +42,31 @@ class ApiAppTest(unittest.TestCase):
         self.assertIsInstance(payload["configured_model"], str)
         self.assertIn("available", payload)
 
+    def test_extraction_model_status_route(self) -> None:
+        from fastapi.testclient import TestClient
+
+        from legal_api.main import app
+
+        client = TestClient(app)
+        response = client.get("/v1/models/extraction")
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertTrue(payload["local_available"])
+        self.assertIn("local_model", payload)
+        self.assertIn("prompt_version", payload)
+
+    def test_extraction_status_route_is_available(self) -> None:
+        from fastapi.testclient import TestClient
+
+        from legal_api.main import app
+
+        client = TestClient(app)
+        response = client.get("/v1/extractions/status")
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertIn("database_available", payload)
+        self.assertIn("extractions", payload)
+
     def test_chat_status_route_reports_model_and_corpus(self) -> None:
         from fastapi.testclient import TestClient
 
@@ -67,6 +92,20 @@ class ApiAppTest(unittest.TestCase):
         self.assertIn("jobs", payload)
         self.assertIn("items", payload)
         self.assertIn("recent_jobs", payload)
+
+    def test_admin_overview_route_is_available(self) -> None:
+        from fastapi.testclient import TestClient
+
+        from legal_api.main import app
+
+        client = TestClient(app)
+        response = client.get("/v1/admin/overview")
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertIn("corpus", payload)
+        self.assertIn("ingestion", payload)
+        self.assertIn("extraction", payload)
+        self.assertIn("models", payload)
 
     def test_case_analyze_route_without_llm(self) -> None:
         from fastapi.testclient import TestClient

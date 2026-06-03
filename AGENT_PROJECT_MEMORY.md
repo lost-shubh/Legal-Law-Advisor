@@ -30,6 +30,7 @@ Last checked from Codex on 2026-06-03.
   - 25 document_texts
   - 239,258 extracted words
   - 649 local deterministic staging embedding chunks
+  - 25 local deterministic staging judgment extractions
   - 2 completed ingestion jobs; the first extraction pass failed before the PyMuPDF
     fallback was added, and the second pass populated text successfully
 - Older `F:\indian-legal-database` staging snapshot recorded in committed docs/manifests:
@@ -70,14 +71,18 @@ Last checked from Codex on 2026-06-03.
 
 - FastAPI routes:
   - `GET /health`
+  - `GET /v1/admin/overview`
   - `GET /v1/corpus/progress`
   - `GET /v1/ingestion/status`
   - `GET /v1/models/ollama`
+  - `GET /v1/models/extraction`
   - `GET /v1/chat/status`
+  - `GET /v1/extractions/status`
   - `POST /v1/search`
   - `POST /v1/chat`
   - `POST /v1/cases/analyze`
   - `POST /v1/similar-cases`
+  - `POST /v1/extractions/judgments`
 
 - Local Ollama integration:
   - preferred/default model: `llama3.2:3b`
@@ -111,6 +116,22 @@ Last checked from Codex on 2026-06-03.
   - `POST /v1/search` accepts `mode: "lexical"`, `mode: "semantic"` and `mode: "hybrid"`
   - semantic mode falls back to lexical search when embeddings are absent
   - active Codex checkout has 649 generated judgment embedding chunks in ignored SQLite data
+
+- Local extraction model MVP:
+  - `legal_db.ai.extract.local_extract_judgment()`
+  - `scripts/extract_staging_judgments.py`
+  - `GET /v1/models/extraction`
+  - `GET /v1/extractions/status`
+  - `POST /v1/extractions/judgments`
+  - model name: `local-rule-extractor-v1`
+  - prompt version: `judgment_v1`
+  - extracts acts cited, sections cited, issue tags, timeline hints, citations, outcome and evidence/argument/reasoning snippets
+  - active Codex checkout has 25 generated staging extractions in ignored SQLite data
+
+- Admin/operations backend MVP:
+  - `GET /v1/admin/overview`
+  - read-only aggregate of corpus progress, ingestion status, extraction status, Ollama status and extraction model status
+  - safe when optional staging tables are missing
 
 - Judgment ingestion tracking:
   - `legal_db/ingest/jobs.py`
@@ -149,7 +170,7 @@ python -m compileall apps legal_db scripts tests
 python -m unittest discover -s tests -v
 ```
 
-Last known test count: 28 passing on 2026-06-03.
+Last known test count: 34 passing on 2026-06-03.
 
 ## Next Build Slice
 
@@ -163,11 +184,11 @@ Build basic frontend pages:
    - corpus progress
 3. Keep the UI quiet and operational, not a landing page.
 4. Start a local dev server if the frontend requires one, and verify in browser.
-5. Keep API contracts aligned with the current FastAPI routes.
+5. Keep API contracts aligned with current FastAPI routes.
 6. Run compile/tests.
 7. Commit source/docs changes only; do not commit raw PDFs, local manifests or SQLite.
 
 ## After That
 
-1. Add admin dashboard for ingestion jobs and corpus progress.
-2. Replace local deterministic hash embeddings with production pgvector/OpenAI or local embedding models.
+1. Add admin dashboard for ingestion jobs, extraction status, model status and corpus progress.
+2. Replace local deterministic hash embeddings/extraction with production pgvector/OpenAI or local embedding/extraction models.

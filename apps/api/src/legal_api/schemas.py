@@ -63,6 +63,41 @@ class IngestionStatusResponse(BaseModel):
     recent_jobs: list[dict[str, Any]]
 
 
+class ExtractionRunRequest(BaseModel):
+    limit: int | None = Field(default=None, ge=0, le=1000)
+    model: str | None = None
+
+
+class ExtractionRunResponse(BaseModel):
+    database_available: bool
+    target_count: int
+    processed_count: int
+    success_count: int
+    failed_count: int
+    model: str
+
+
+class ExtractionStatusResponse(BaseModel):
+    database_available: bool
+    extractions: dict[str, Any]
+    recent_extractions: list[dict[str, Any]] = Field(default_factory=list)
+
+
+class ExtractionModelStatusResponse(BaseModel):
+    local_model: str
+    local_available: bool
+    hosted_model: str
+    hosted_configured: bool
+    prompt_version: str
+
+
+class AdminOverviewResponse(BaseModel):
+    corpus: dict[str, Any]
+    ingestion: dict[str, Any]
+    extraction: dict[str, Any]
+    models: dict[str, Any]
+
+
 class CaseAnalyzeRequest(BaseModel):
     case_text: str = Field(..., min_length=20)
     context_limit: int = Field(default=5, ge=1, le=10)

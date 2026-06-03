@@ -129,6 +129,18 @@ For MVP:
 
 For Indian law, multilingual support matters because future material may include Hindi and state-language documents.
 
+## Extraction Model
+
+Current local MVP:
+
+- `local-rule-extractor-v1` runs without hosted credentials.
+- `scripts/extract_staging_judgments.py` stores staging outputs in SQLite `staging_extractions`.
+- `GET /v1/models/extraction` reports local and hosted extraction model availability.
+- `GET /v1/extractions/status` reports staging extraction counts.
+- `POST /v1/extractions/judgments` runs the local extraction model over parsed staging judgments.
+
+The local extractor is deterministic and suitable for backend wiring, tests and first-pass metadata. It should not be treated as final legal interpretation. Production extraction should use a stronger hosted or larger local model, validation rules and human review for high-impact fields.
+
 ## Production Direction
 
 Production should support model swapping:

@@ -52,6 +52,7 @@ def main() -> int:
                 "legal_books": count_table(conn, "legal_books"),
                 "book_chunks": count_table(conn, "book_chunks"),
                 "staging_embeddings": count_table(conn, "staging_embeddings"),
+                "staging_extractions": count_table(conn, "staging_extractions"),
             }
         finally:
             conn.close()
@@ -67,6 +68,7 @@ def main() -> int:
         "current_legal_books": current.get("legal_books", 0),
         "current_book_chunks": current.get("book_chunks", 0),
         "current_staging_embeddings": current.get("staging_embeddings", 0),
+        "current_staging_extractions": current.get("staging_extractions", 0),
         "court_level_targets": targets["court_level_mix"],
         "domain_targets": targets["domain_mix"],
     }

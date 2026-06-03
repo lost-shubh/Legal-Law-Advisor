@@ -19,8 +19,9 @@ Completed so far:
 - Local SQLite staging corpus and ingestion workflow for development before PostgreSQL/WSL is fully available.
 - Priority statute and section ingestion scaffold, with current staging data including `16` statutes and `5,421` sections.
 - Legal books/materials ingestion with chapters and chunks, currently `3` materials, `26` chapters and `332` chunks in staging.
-- FastAPI vertical slice with search, chat, corpus progress, ingestion status, Ollama status, case analysis and similar-cases routes.
+- FastAPI vertical slice with search, chat, admin overview, corpus progress, ingestion status, Ollama/extraction model status, case analysis and similar-cases routes.
 - Retrieval MVP over statutes, books and judgment text, with lexical, semantic and hybrid search modes.
+- Local deterministic judgment extraction model with staging extraction storage and API status/run routes.
 - Local Ollama integration with configured `llama3.2:3b` default and `llama3.2:1b` fallback.
 - Chat readiness status that checks both the selected Ollama model and legal corpus availability.
 - Case analyzer MVP that detects issue tags, dates, evidence categories, missing documents, urgency warnings and related legal context.
@@ -39,7 +40,8 @@ Book chapters:     26
 Book chunks:       332
 Document texts:    44
 Embedding chunks:  649 local staging chunks
-Test suite:        28 passing tests
+Extractions:       25 local staging judgment extractions
+Test suite:        34 passing tests
 ```
 
 Main work still left:
@@ -137,6 +139,13 @@ Build local deterministic staging embeddings:
 python .\scripts\build_staging_embeddings.py
 ```
 
+Run local judgment extraction:
+
+```powershell
+python .\scripts\extract_staging_judgments.py
+python .\scripts\extract_staging_judgments.py --status
+```
+
 Ingest judgment PDFs from a manifest:
 
 ```powershell
@@ -172,12 +181,16 @@ Useful API routes:
 
 ```text
 GET  /v1/ingestion/status
+GET  /v1/admin/overview
 GET  /v1/models/ollama
+GET  /v1/models/extraction
 GET  /v1/chat/status
+GET  /v1/extractions/status
 POST /v1/search
 POST /v1/chat
 POST /v1/cases/analyze
 POST /v1/similar-cases
+POST /v1/extractions/judgments
 ```
 
 Private user files must use the `private_case_*` tables and must not be mixed into public training data unless explicit consent and anonymization are implemented.
