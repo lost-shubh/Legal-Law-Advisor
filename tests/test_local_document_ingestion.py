@@ -6,6 +6,7 @@ from legal_db.ingest.local_documents import (
     discover_local_documents,
     infer_material_type,
     normalize_title,
+    split_chapters,
 )
 
 
@@ -34,6 +35,12 @@ class LocalDocumentIngestionTest(unittest.TestCase):
         self.assertEqual(len(candidates), 1)
         self.assertEqual(candidates[0].title, "Legal Report")
         self.assertEqual(len(skipped), 2)
+
+    def test_split_chapters_does_not_treat_plain_part_text_as_heading(self) -> None:
+        text = "This is part of public servant text. " * 80
+        chapters = split_chapters(text)
+        self.assertEqual(len(chapters), 1)
+        self.assertEqual(chapters[0]["chapter_number"], "FULL")
 
 
 if __name__ == "__main__":

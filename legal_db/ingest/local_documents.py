@@ -20,7 +20,7 @@ PERSONAL_SKIP_PATTERNS = (
     ".vcf",
 )
 CHAPTER_RE = re.compile(
-    r"(?im)^\s*(?:chapter|part)\s+([0-9IVXLC]+|[A-Z])\s*[:.\-]?\s*(.{0,140})$"
+    r"(?im)^\s*chapter\s+([0-9IVXLC]+|[A-Z])(?:\s*[:.\-]\s+|\s{2,})(.{0,140})$"
 )
 
 
@@ -444,12 +444,13 @@ def ingest_local_library(
         engine = make_pg_engine(database_url)
         with engine.begin() as conn:
             source_id = ensure_source(conn, source_code=source_code, source_name=source_name, folder=root)
-            for candidate in candidates:
-                try:
-                    content_hash = sha256_file(candidate.path)
-                    raw_text, clean_text, page_count, word_count, quality = extract_local_pdf_text(
-                        candidate.path
-                    )
+        for candidate in candidates:
+            try:
+                content_hash = sha256_file(candidate.path)
+                raw_text, clean_text, page_count, word_count, quality = extract_local_pdf_text(
+                    candidate.path
+                )
+                with engine.begin() as conn:
                     if word_count < min_words:
                         source_document_id = upsert_source_document(
                             conn,
@@ -491,9 +492,6 @@ def ingest_local_library(
                         book_id=book_id,
                         chapters=chapters,
                     )
-                    summary.imported_books += 1
-                    summary.imported_chapters += chapter_count
-                    summary.imported_chunks += chunk_count
                     conn.execute(
                         sql_text(
                             """
@@ -521,8 +519,11 @@ def ingest_local_library(
                             "notes": f"source_document_id={source_document_id}",
                         },
                     )
-                except Exception as exc:
-                    summary.failed.append({"path": str(candidate.path), "reason": str(exc)})
+                summary.imported_books += 1
+                summary.imported_chapters += chapter_count
+                summary.imported_chunks += chunk_count
+            except Exception as exc:
+                summary.failed.append({"path": str(candidate.path), "reason": str(exc)})
     except Exception as exc:
         summary.database_available = False
         summary.error = str(exc)
