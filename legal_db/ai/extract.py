@@ -11,6 +11,7 @@ from typing import Any
 from legal_db.config import settings
 from legal_db.citations.parser import extract_citations
 from legal_db.ingest.jobs import DEFAULT_DB_PATH
+from legal_db.pdf.ocr import should_extract_for_ai
 
 
 LOCAL_EXTRACTION_MODEL = "local-rule-extractor-v1"
@@ -321,6 +322,10 @@ def _table_exists(conn: sqlite3.Connection, table_name: str) -> bool:
     )
 
 
+def _column_exists(conn: sqlite3.Connection, table_name: str, column_name: str) -> bool:
+    return any(row[1] == column_name for row in conn.execute(f"PRAGMA table_info({table_name})"))
+
+
 def _content_hash(text: str) -> str:
     import hashlib
 
@@ -342,21 +347,55 @@ def extract_staging_judgments(
         if not all(_table_exists(conn, table_name) for table_name in required):
             return StagingExtractionSummary(True, 0, 0, 0, 0, model)
         ensure_staging_extraction_tables(conn)
+        word_count_expr = "j.word_count" if _column_exists(conn, "judgments", "word_count") else "NULL"
+        ocr_quality_expr = (
+            "j.ocr_quality" if _column_exists(conn, "judgments", "ocr_quality") else "NULL"
+        )
         sql = """
-            SELECT j.id, j.case_id, j.source_document_id, dt.clean_text
+            SELECT j.id, j.case_id, j.source_document_id, dt.clean_text,
+                   {word_count_expr} AS judgment_word_count,
+                   {ocr_quality_expr} AS judgment_ocr_quality
             FROM judgments j
             JOIN document_texts dt ON dt.source_document_id = j.source_document_id
             WHERE dt.clean_text IS NOT NULL
             ORDER BY j.id
-        """
+        """.format(word_count_expr=word_count_expr, ocr_quality_expr=ocr_quality_expr)
         if limit is not None:
             rows = conn.execute(sql + " LIMIT ?", (max(limit, 0),)).fetchall()
         else:
             rows = conn.execute(sql).fetchall()
 
         success = failed = 0
-        for judgment_id, case_id, source_document_id, clean_text in rows:
+        for judgment_id, case_id, source_document_id, clean_text, word_count, ocr_quality in rows:
             try:
+                can_extract, skip_reason = should_extract_for_ai(
+                    int(word_count) if word_count is not None else len((clean_text or "").split()),
+                    float(ocr_quality) if ocr_quality is not None else None,
+                )
+                if not can_extract:
+                    conn.execute(
+                        """
+                        INSERT INTO staging_extractions
+                        (judgment_id, case_id, source_document_id, model_name, prompt_version,
+                         status, error_msg, extracted_at)
+                        VALUES (?, ?, ?, ?, ?, 'SKIPPED', ?, ?)
+                        ON CONFLICT(judgment_id, model_name, prompt_version)
+                        DO UPDATE SET status = 'SKIPPED',
+                                      error_msg = excluded.error_msg,
+                                      extracted_at = excluded.extracted_at
+                        """,
+                        (
+                            judgment_id,
+                            case_id,
+                            source_document_id,
+                            model,
+                            PROMPT_VERSION,
+                            skip_reason,
+                            datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+                        ),
+                    )
+                    success += 1
+                    continue
                 result = local_extract_judgment(clean_text or "", model=model)
                 status = "DONE" if not result.validation_errors else "NEEDS_REVIEW"
                 conn.execute(

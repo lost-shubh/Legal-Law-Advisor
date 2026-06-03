@@ -59,8 +59,18 @@ class AiExtractionTest(unittest.TestCase):
             db_path = Path(temp_dir) / "staging.sqlite"
             create_extraction_db(
                 db_path,
-                "Section 138 of the Negotiable Instruments Act was discussed. "
-                "The cheque was dishonoured and the appeal is dismissed.",
+                (
+                    "Section 138 of the Negotiable Instruments Act was discussed. "
+                    "The complainant produced the cheque, bank return memo, statutory notice, "
+                    "postal receipt and account statement. The accused disputed liability and "
+                    "argued that the cheque was issued only as security. The trial court reviewed "
+                    "the evidence, the presumption under law, the reply notice, the testimony of "
+                    "the bank witness and the documents placed on record. Learned counsel submitted "
+                    "that the statutory demand was validly served and that the debt was enforceable. "
+                    "The appellate court considered the reasoning, the findings and the defence "
+                    "version in detail. The court held that the evidence was sufficient and the "
+                    "cheque was dishonoured. For these reasons, the appeal is dismissed."
+                ),
             )
             summary = extract_staging_judgments(db_path, limit=1)
             status = staging_extraction_status(db_path)

@@ -4,7 +4,7 @@ Last updated: 2026-06-03
 
 ## Runtime Status
 
-Docker Desktop was installed, but PostgreSQL/pgvector containers cannot run yet because WSL/Virtual Machine Platform requires an elevated Windows administrator session to enable. The project is therefore using a staging SQLite database until Docker can run.
+Docker Desktop was installed, but PostgreSQL/pgvector containers cannot run yet because WSL/Virtual Machine Platform requires an elevated Windows administrator session to enable. A non-elevated DISM attempt on 2026-06-03 failed with `Error: 740`. The project is therefore using a staging SQLite database until Docker can run.
 
 Staging database:
 
@@ -32,6 +32,9 @@ Current active Codex checkout staging counts:
 - extracted judgment words: 239,258
 - local staging embedding chunks: 649
 - local staging judgment extractions: 25
+- OCR/text quality gate: available in staging judgment ingestion
+- SQLite-to-PostgreSQL judgment migration helper: available, dry-run supported
+- DOJ/Delhi/Bombay saved-HTML manifest helper: available
 - statutes: 0 in the active `C:\Users\Admin\Legal-Law-Advisor` staging DB
 - legal books/materials: 0 in the active `C:\Users\Admin\Legal-Law-Advisor` staging DB
 
@@ -82,9 +85,9 @@ The latest 25 official Supreme Court judgment PDFs visible on the Supreme Court 
 - District court/eCourts data
 - BNS offence/charge catalog rows
 - full Law Commission report corpus
-- OCR for scanned judgment PDFs
-- AI extraction fields
-- embeddings/vector search
+- full OCR workflow for scanned High Court and district PDFs at scale
+- production AI extraction fields in PostgreSQL
+- production pgvector embeddings/vector search
 - citation graph
 - PostgreSQL/pgvector production import
 
@@ -95,4 +98,5 @@ The latest 25 official Supreme Court judgment PDFs visible on the Supreme Court 
 3. Run `docker compose up -d`.
 4. Apply PostgreSQL schema from `sql/`.
 5. Import staging SQLite records into PostgreSQL.
-6. Continue ingestion with Gazette, High Court, and eCourts pipelines.
+6. Generate DOJ/Delhi/Bombay manifests from saved official result HTML and ingest them.
+7. Continue ingestion with Gazette, High Court live collectors, and eCourts pipelines.

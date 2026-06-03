@@ -23,10 +23,14 @@ Completed so far:
 - Retrieval MVP over statutes, books and judgment text, with lexical, semantic and hybrid search modes.
 - Local deterministic judgment extraction model with staging extraction storage and API status/run routes.
 - Local Ollama integration with configured `llama3.2:3b` default and `llama3.2:1b` fallback.
+- No `llama3.1:8b` upgrade is planned on this machine because of local RAM/storage limits.
 - Chat readiness status that checks both the selected Ollama model and legal corpus availability.
 - Case analyzer MVP that detects issue tags, dates, evidence categories, missing documents, urgency warnings and related legal context.
 - Judgment ingestion tracking with job/item status, manifest ingestion, PDF hashing, raw PDF storage path, case/judgment inserts and optional text extraction.
 - Supreme Court/e-SCR manifest generator that parses saved SCR/e-SCR result HTML or accessible result pages into standard judgment manifests.
+- Saved-result HTML manifest generator for DOJ, Delhi High Court and Bombay High Court result pages.
+- SQLite-to-PostgreSQL migration helper with dry-run counts for staging judgment rows.
+- OCR/text quality scoring and extraction gating for too-short or low-quality judgment text.
 - Automated tests covering API routes, retrieval, local semantic search, similar cases, case intake, citation parsing, chunking, ingestion tracking, manifest ingestion and SCI/e-SCR manifest generation.
 
 Current staging corpus snapshot:
@@ -41,13 +45,13 @@ Book chunks:       332
 Document texts:    44
 Embedding chunks:  649 local staging chunks
 Extractions:       25 local staging judgment extractions
-Test suite:        34 passing tests
+Test suite:        40 passing tests
 ```
 
 Main work still left:
 
 - Ingest the first `1,000` official judgments, then scale toward `10,000`.
-- Build source-specific collectors for High Courts, DOJ judgment portal and district/eCourts data.
+- Run source-specific collectors at scale for High Courts, DOJ judgment portal and district/eCourts data.
 - Run OCR and AI extraction at scale.
 - Replace local deterministic hash embeddings with production pgvector/OpenAI or local embedding models.
 - Build the citizen frontend, lawyer review app and admin dashboard.
@@ -73,7 +77,7 @@ See [FULL_PROJECT_STRUCTURE.md](docs/architecture/FULL_PROJECT_STRUCTURE.md) for
 
 ## Local Start
 
-On this Windows machine, Docker Desktop has been installed, but Docker cannot run Linux containers until WSL/Virtual Machine Platform is enabled from an elevated administrator session. Until then, use the staging SQLite ingestion workflow in [STAGING_INGESTION.md](docs/STAGING_INGESTION.md).
+On this Windows machine, Docker Desktop has been installed, but Docker cannot run Linux containers until WSL/Virtual Machine Platform is enabled from an elevated administrator session. A non-elevated DISM attempt on 2026-06-03 failed with `Error: 740`, so this must be done from administrator PowerShell. Until then, use the staging SQLite ingestion workflow in [STAGING_INGESTION.md](docs/STAGING_INGESTION.md).
 
 1. Copy `.env.example` to `.env` and adjust values.
 2. Start services:
@@ -153,6 +157,20 @@ python .\scripts\generate_sc_manifest.py --html .\data\source_exports\scr_result
 python .\scripts\ingest_judgments.py --init-template .\data\judgment_manifest.local.json
 python .\scripts\ingest_judgments.py .\data\judgment_manifest.local.json --limit 10
 python .\scripts\ingest_judgments.py --status
+```
+
+Generate a manifest from saved DOJ/High Court result HTML:
+
+```powershell
+python .\scripts\generate_hc_manifest.py --collector delhi --html .\data\source_exports\delhi_results.html --output .\data\manifests\delhi_hc.local.json --limit 100
+python .\scripts\generate_hc_manifest.py --collector bombay --html .\data\source_exports\bombay_results.html --output .\data\manifests\bombay_hc.local.json --limit 100
+python .\scripts\generate_hc_manifest.py --collector doj --html .\data\source_exports\doj_results.html --output .\data\manifests\doj_hc.local.json --limit 100
+```
+
+Dry-run staging counts before PostgreSQL import:
+
+```powershell
+python .\scripts\migrate_staging_to_postgres.py --dry-run
 ```
 
 See [JUDGMENT_INGESTION.md](docs/JUDGMENT_INGESTION.md).

@@ -102,12 +102,28 @@ def ensure_staging_judgment_tables(conn: sqlite3.Connection) -> None:
           pdf_url TEXT,
           page_count INTEGER,
           word_count INTEGER,
+          ocr_quality REAL,
           created_at TEXT DEFAULT CURRENT_TIMESTAMP,
           UNIQUE(case_id, source_document_id)
         )
         """
     )
+    ensure_column(conn, "judgments", "ocr_quality", "REAL")
     conn.commit()
+
+
+def ensure_column(
+    conn: sqlite3.Connection,
+    table_name: str,
+    column_name: str,
+    column_definition: str,
+) -> None:
+    columns = {
+        row[1]
+        for row in conn.execute(f"PRAGMA table_info({table_name})").fetchall()
+    }
+    if column_name not in columns:
+        conn.execute(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_definition}")
 
 
 @dataclass(frozen=True)
@@ -497,10 +513,10 @@ class JudgmentManifestIngestionPipeline:
         conn.execute(
             """
             UPDATE judgments
-            SET page_count = ?, word_count = ?
+            SET page_count = ?, word_count = ?, ocr_quality = ?
             WHERE id = ?
             """,
-            (result.page_count, result.word_count, judgment_id),
+            (result.page_count, result.word_count, result.ocr_quality, judgment_id),
         )
         conn.execute(
             """

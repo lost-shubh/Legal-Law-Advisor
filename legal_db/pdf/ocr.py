@@ -14,6 +14,7 @@ class PdfTextResult:
     page_count: int
     word_count: int
     extraction_method: str
+    ocr_quality: float = 0.0
 
 
 def clean_ocr_text(text: str) -> str:
@@ -23,6 +24,30 @@ def clean_ocr_text(text: str) -> str:
     text = re.sub(r"[Ss]ec\.\s*([0-9A-Za-z-]+)", r"Section \1", text)
     text = re.sub(r"[Ss]ection\s+([0-9A-Za-z-]+)", r"Section \1", text)
     return text.strip()
+
+
+def estimate_text_quality(clean_text: str, page_count: int) -> float:
+    text = clean_text.strip()
+    if not text:
+        return 0.0
+    total_chars = len(text)
+    alnum_chars = sum(1 for char in text if char.isalnum())
+    replacement_chars = text.count("\ufffd")
+    words = text.split()
+    words_per_page = len(words) / max(page_count, 1)
+    alnum_ratio = alnum_chars / max(total_chars, 1)
+    replacement_penalty = min(replacement_chars / max(total_chars, 1), 0.5)
+    density_score = min(words_per_page / 250, 1.0)
+    quality = (0.55 * alnum_ratio) + (0.35 * density_score) + 0.10
+    return round(max(min(quality - replacement_penalty, 1.0), 0.0), 3)
+
+
+def should_extract_for_ai(word_count: int, ocr_quality: float | None) -> tuple[bool, str | None]:
+    if word_count < 100:
+        return False, "TOO_SHORT"
+    if ocr_quality is not None and ocr_quality < 0.6:
+        return False, "OCR_QUALITY_TOO_LOW"
+    return True, None
 
 
 def classify_pdf(path: Path) -> str:
@@ -97,12 +122,15 @@ def extract_pdf_text(path: str | Path, lang: str = "eng+hin") -> PdfTextResult:
         raw_text, page_count = ocr_pdf(pdf_path, lang=lang)
         method = "OCR"
     clean_text = clean_ocr_text(raw_text)
+    word_count = len(clean_text.split())
+    ocr_quality = estimate_text_quality(clean_text, page_count)
     return PdfTextResult(
         pdf_type=pdf_type,
         raw_text=raw_text,
         clean_text=clean_text,
         page_count=page_count,
-        word_count=len(clean_text.split()),
+        word_count=word_count,
         extraction_method=method,
+        ocr_quality=ocr_quality,
     )
 

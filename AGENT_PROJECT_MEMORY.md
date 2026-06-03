@@ -14,6 +14,7 @@ Last checked from Codex on 2026-06-03.
 - Older docs/commands may mention `F:\indian-legal-database`; adapt those paths to the active checkout path.
 - Keep raw PDFs, local SQLite DBs, and `__pycache__` ignored and out of commits.
 - If code-review-graph MCP tools are available, use them before file scanning. They were not exposed in the latest Codex session, so normal Git/file inspection was used.
+- Do not upgrade/pull/configure `llama3.1:8b` on this machine. Keep the smaller local Ollama path because the user has RAM/storage limits.
 
 ## Current Project State
 
@@ -88,6 +89,7 @@ Last checked from Codex on 2026-06-03.
   - preferred/default model: `llama3.2:3b`
   - fallback: `llama3.2:1b`
   - actual installed model observed: `llama3.2:3b`
+  - `llama3.1:8b` intentionally not used because of local storage/RAM limits
   - `llama3.2:2b` was not available as an Ollama tag
   - GitHub issue #1 "Lama version conflict" fixed by aligning defaults to installed `llama3.2:3b`
   - chatbot readiness exposed through `GET /v1/chat/status`
@@ -160,8 +162,32 @@ Last checked from Codex on 2026-06-03.
 
 - PDF text extraction:
   - `legal_db/pdf/ocr.py` now falls back to PyMuPDF when `pdfplumber` is not installed
+  - `estimate_text_quality()` produces an `ocr_quality` score for extracted text
+  - judgment ingestion stores `ocr_quality` in the staging `judgments` table
+  - batch extraction skips text below 100 words or with `ocr_quality < 0.6`
   - the 25 SCI judgment PDFs were parsed through this PyMuPDF fallback in the active
     Codex checkout
+
+- Production migration helper:
+  - `scripts/migrate_staging_to_postgres.py`
+  - `--dry-run` reports staging counts without requiring PostgreSQL dependencies
+  - actual migration targets staging `source_documents`, `cases`, `judgments` and associated `document_texts`
+  - PostgreSQL/pgvector import is still blocked until WSL/Docker are live
+
+- DOJ/High Court saved-HTML manifest helper:
+  - `legal_db/ingest/judgment_collectors.py`
+  - `scripts/generate_hc_manifest.py`
+  - supported collectors: `doj`, `delhi`, `bombay`
+  - parses saved official result HTML into the standard judgment manifest shape for `scripts/ingest_judgments.py`
+  - live portal automation is still future work
+
+## Current Blockers And Constraints
+
+- WSL is not installed/enabled in the current non-elevated shell.
+- `docker --version` works, but `docker compose ps` cannot reach the Linux engine pipe yet.
+- `dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart` failed with `Error: 740`; enabling WSL/VirtualMachinePlatform requires elevated administrator PowerShell.
+- PostgreSQL/pgvector production import cannot run until that admin WSL step is completed.
+- Do not pull `llama3.1:8b`; continue with `llama3.2:3b` default and `llama3.2:1b` fallback.
 
 ## Verification Last Known Good
 
@@ -170,25 +196,22 @@ python -m compileall apps legal_db scripts tests
 python -m unittest discover -s tests -v
 ```
 
-Last known test count: 34 passing on 2026-06-03.
+Last known test count: 40 passing on 2026-06-03.
 
 ## Next Build Slice
 
-Build basic frontend pages:
+Continue the data/backend scale path:
 
-1. Inspect `apps/web`, `apps/admin` and existing frontend scaffolding before adding files.
-2. Build first usable pages for:
-   - ask legal question
-   - analyze case
-   - search judgments
-   - corpus progress
-3. Keep the UI quiet and operational, not a landing page.
-4. Start a local dev server if the frontend requires one, and verify in browser.
-5. Keep API contracts aligned with current FastAPI routes.
-6. Run compile/tests.
-7. Commit source/docs changes only; do not commit raw PDFs, local manifests or SQLite.
+1. User/admin must enable WSL + VirtualMachinePlatform from elevated PowerShell.
+2. Start Docker Desktop, run `docker compose up -d`, apply `sql/001_schema.sql`, `sql/002_indexes.sql`, `sql/003_seed_reference.sql`.
+3. Run `python .\scripts\migrate_staging_to_postgres.py --dry-run`, then migrate once PostgreSQL is reachable.
+4. Collect saved official DOJ/Delhi/Bombay result HTML and generate manifests with `scripts/generate_hc_manifest.py`.
+5. Ingest generated manifests with `scripts/ingest_judgments.py`.
+6. Run OCR/extraction/embedding scripts over the expanded staging corpus.
+7. Keep source/docs changes only; do not commit raw PDFs, local manifests or SQLite.
 
 ## After That
 
-1. Add admin dashboard for ingestion jobs, extraction status, model status and corpus progress.
-2. Replace local deterministic hash embeddings/extraction with production pgvector/OpenAI or local embedding/extraction models.
+1. Add live source collectors for DOJ, High Courts and eCourts when portal behavior is known.
+2. Build basic citizen/admin frontend pages after the corpus reaches a useful size.
+3. Replace local deterministic hash embeddings/extraction with production pgvector/OpenAI or local embedding/extraction models where practical.

@@ -153,9 +153,54 @@ The generator extracts:
 - official PDF URL
 - source-page context metadata
 
+## DOJ And High Court Saved-HTML Manifest Generator
+
+The DOJ and High Court portals can be parsed from saved result HTML before live browser automation is added. Save the official result page HTML locally, then generate the standard judgment manifest:
+
+```powershell
+python .\scripts\generate_hc_manifest.py `
+  --collector delhi `
+  --html .\data\source_exports\delhi_results.html `
+  --output .\data\manifests\delhi_hc.local.json `
+  --limit 100
+```
+
+Supported collectors:
+
+- `doj`
+- `delhi`
+- `bombay`
+
+The collector extracts PDF/order links, source context, case number, judgment date where present, court code and source code. The resulting manifest is ingested through the same `scripts/ingest_judgments.py` path.
+
+## OCR And Extraction Quality Gate
+
+Text extraction now stores `ocr_quality` on staging judgments. Batch AI extraction skips:
+
+- `TOO_SHORT` when text has fewer than 100 words.
+- `OCR_QUALITY_TOO_LOW` when quality is below `0.6`.
+
+This keeps corrupted scanned PDFs out of the extraction queue until they can be reprocessed.
+
+## PostgreSQL Migration Helper
+
+After WSL/Docker/PostgreSQL are available and schema/seed SQL has been applied, inspect staging counts:
+
+```powershell
+python .\scripts\migrate_staging_to_postgres.py --dry-run
+```
+
+Then migrate staging judgment rows:
+
+```powershell
+python .\scripts\migrate_staging_to_postgres.py
+```
+
+The helper currently migrates staging `source_documents`, `cases`, `judgments` and associated extracted `document_texts` into the production schema.
+
 ## Next Source-Specific Scrapers
 
-Build these after the manifest path is stable:
+Build live collectors after the saved-HTML manifest path is stable:
 
 1. Delhi High Court official judgment parser.
 2. Bombay High Court official judgment parser.
