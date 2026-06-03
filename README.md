@@ -77,7 +77,7 @@ See [FULL_PROJECT_STRUCTURE.md](docs/architecture/FULL_PROJECT_STRUCTURE.md) for
 
 ## Local Start
 
-On this Windows machine, Docker Desktop has been installed, but Docker cannot run Linux containers until WSL/Virtual Machine Platform is enabled from an elevated administrator session. A non-elevated DISM attempt on 2026-06-03 failed with `Error: 740`, so this must be done from administrator PowerShell. Until then, use the staging SQLite ingestion workflow in [STAGING_INGESTION.md](docs/STAGING_INGESTION.md).
+On this Windows machine, WSL2 and Docker Desktop are now enabled. The production PostgreSQL/pgvector, Redis and MinIO containers can run through Docker Compose. The staging SQLite workflow remains useful for local import and source parsing before records are migrated to PostgreSQL.
 
 1. Copy `.env.example` to `.env` and adjust values.
 2. Start services:

@@ -43,6 +43,17 @@ Last checked from Codex on 2026-06-03.
   - 332 book chunks
   - 44 document_texts
 
+- Production Docker/PostgreSQL status from `F:\indian-legal-database` on 2026-06-03:
+  - WSL2 was enabled by the user from elevated PowerShell
+  - Docker Desktop engine is running
+  - `legaldb-postgres`, `legaldb-redis` and `legaldb-minio` are running
+  - PostgreSQL schema exists with 33 tables
+  - staging migration completed successfully at commit `19e9c16`
+  - production PostgreSQL now has 95 source documents, 13 data sources, 16 statutes, 5,421 sections, 25 cases and 25 judgments
+  - production judgments have 442,053 total words and 0 missing `clean_text`
+  - duplicate source-document/case checks returned 0
+  - 25 decided cases have no `outcomes` rows yet; production AI outcome migration/extraction remains future work
+
 ## Built So Far
 
 - Full project scaffold:
@@ -183,11 +194,10 @@ Last checked from Codex on 2026-06-03.
 
 ## Current Blockers And Constraints
 
-- WSL is not installed/enabled in the current non-elevated shell.
-- `docker --version` works, but `docker compose ps` cannot reach the Linux engine pipe yet.
-- `dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart` failed with `Error: 740`; enabling WSL/VirtualMachinePlatform requires elevated administrator PowerShell.
-- PostgreSQL/pgvector production import cannot run until that admin WSL step is completed.
+- WSL/Docker/PostgreSQL are now unblocked in the `F:\indian-legal-database` checkout.
+- PostgreSQL/pgvector production import for current staging statutes/sections/judgments is complete.
 - Do not pull `llama3.1:8b`; continue with `llama3.2:3b` default and `llama3.2:1b` fallback.
+- Remaining production gaps: outcomes, production embeddings, production extraction records, legal books/material import, High Court collectors at scale, Gazette ingestion, citation graph and frontend/admin UI.
 
 ## Verification Last Known Good
 
@@ -202,13 +212,12 @@ Last known test count: 41 passing on 2026-06-03.
 
 Continue the data/backend scale path:
 
-1. User/admin must enable WSL + VirtualMachinePlatform from elevated PowerShell.
-2. Start Docker Desktop, run `docker compose up -d`, apply `sql/001_schema.sql`, `sql/002_indexes.sql`, `sql/003_seed_reference.sql`.
-3. Run `python .\scripts\migrate_staging_to_postgres.py --dry-run`, then migrate once PostgreSQL is reachable.
-4. Collect saved official DOJ/Delhi/Bombay result HTML and generate manifests with `scripts/generate_hc_manifest.py`.
-5. Ingest generated manifests with `scripts/ingest_judgments.py`.
-6. Run OCR/extraction/embedding scripts over the expanded staging corpus.
-7. Keep source/docs changes only; do not commit raw PDFs, local manifests or SQLite.
+1. Build/run production embedding import into PostgreSQL `embeddings` from the imported 25 judgments and 5,421 sections.
+2. Build/run production extraction/outcome import for the 25 imported judgments.
+3. Collect saved official DOJ/Delhi/Bombay result HTML and generate manifests with `scripts/generate_hc_manifest.py`.
+4. Ingest generated manifests with `scripts/ingest_judgments.py`.
+5. Run OCR/extraction/embedding scripts over the expanded corpus.
+6. Keep source/docs changes only; do not commit raw PDFs, local manifests or SQLite.
 
 ## After That
 

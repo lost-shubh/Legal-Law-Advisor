@@ -4,7 +4,13 @@ Last updated: 2026-06-03
 
 ## Runtime Status
 
-Docker Desktop was installed, but PostgreSQL/pgvector containers cannot run yet because WSL/Virtual Machine Platform requires an elevated Windows administrator session to enable. A non-elevated DISM attempt on 2026-06-03 failed with `Error: 740`. The project is therefore using a staging SQLite database until Docker can run.
+WSL2 and Docker Desktop are now enabled on the Windows machine. From the `F:\indian-legal-database` checkout, Docker Compose is running:
+
+- `legaldb-postgres`
+- `legaldb-redis`
+- `legaldb-minio`
+
+PostgreSQL/pgvector schema is applied and the current staging corpus has been migrated into PostgreSQL.
 
 Staging database:
 
@@ -41,6 +47,27 @@ Current active Codex checkout staging counts:
 The older `F:\indian-legal-database` snapshot recorded in committed summaries had 16
 statutes, 5,421 extracted statute sections, 3 legal books/materials, 26 chapters and
 332 book chunks.
+
+## Loaded Into PostgreSQL
+
+Current production PostgreSQL counts after migration:
+
+- data sources: 13
+- source documents: 95
+- statutes: 16
+- sections: 5,421
+- cases: 25
+- judgments: 25
+- judgment words: 442,053
+
+Quality checks:
+
+- judgments without text: 0
+- cases with impossible dates: 0
+- duplicate PDF hashes: 0
+- duplicate source documents: 0
+- duplicate migrated cases: 0
+- decided cases without outcomes: 25
 
 ## Production Corpus Target
 
@@ -86,17 +113,14 @@ The latest 25 official Supreme Court judgment PDFs visible on the Supreme Court 
 - BNS offence/charge catalog rows
 - full Law Commission report corpus
 - full OCR workflow for scanned High Court and district PDFs at scale
-- production AI extraction fields in PostgreSQL
-- production pgvector embeddings/vector search
+- production AI extraction/outcome rows in PostgreSQL
+- production pgvector embeddings/vector search rows
 - citation graph
 - PostgreSQL/pgvector production import
 
 ## Next Steps
 
-1. Enable WSL/Virtual Machine Platform in an elevated Windows administrator session.
-2. Start Docker Desktop.
-3. Run `docker compose up -d`.
-4. Apply PostgreSQL schema from `sql/`.
-5. Import staging SQLite records into PostgreSQL.
-6. Generate DOJ/Delhi/Bombay manifests from saved official result HTML and ingest them.
-7. Continue ingestion with Gazette, High Court live collectors, and eCourts pipelines.
+1. Build production embedding import for sections and judgment chunks.
+2. Build production extraction/outcome import for migrated judgments.
+3. Generate DOJ/Delhi/Bombay manifests from saved official result HTML and ingest them.
+4. Continue ingestion with Gazette, High Court live collectors, and eCourts pipelines.
