@@ -98,6 +98,15 @@ class LocalDocumentIngestionTest(unittest.TestCase):
         self.assertEqual(len(chapters), 1)
         self.assertEqual(chapters[0]["chapter_number"], "FULL")
 
+    def test_split_chapters_suffixes_duplicate_headings(self) -> None:
+        repeated_body = "Kidnapping abduction slavery forced labour section text. " * 20
+        text = (
+            f"CHAPTER XVI  OF OFFENCES AFFECTING THE HUMAN BODY\n{repeated_body}\n"
+            f"CHAPTER XVI  OF OFFENCES AFFECTING THE HUMAN BODY\n{repeated_body}"
+        )
+        chapters = split_chapters(text)
+        self.assertEqual([chapter["chapter_number"] for chapter in chapters], ["XVI", "XVI.2"])
+
 
 if __name__ == "__main__":
     unittest.main()

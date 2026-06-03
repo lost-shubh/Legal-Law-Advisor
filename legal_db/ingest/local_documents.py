@@ -263,17 +263,24 @@ def split_chapters(clean_text: str) -> list[dict[str, Any]]:
             }
         ]
     chapters: list[dict[str, Any]] = []
+    seen_chapter_keys: dict[tuple[str, str], int] = {}
     for index, match in enumerate(matches):
         start = match.start()
         end = matches[index + 1].start() if index + 1 < len(matches) else len(clean_text)
         chapter_text = clean_text[start:end].strip()
         if len(chapter_text.split()) < 50:
             continue
+        chapter_number = match.group(1).strip()
+        chapter_title = re.sub(r"\s+", " ", match.group(2)).strip() or f"Chapter {chapter_number}"
+        chapter_key = (chapter_number, chapter_title)
+        seen_count = seen_chapter_keys.get(chapter_key, 0) + 1
+        seen_chapter_keys[chapter_key] = seen_count
+        if seen_count > 1:
+            chapter_number = f"{chapter_number}.{seen_count}"
         chapters.append(
             {
-                "chapter_number": match.group(1).strip(),
-                "chapter_title": re.sub(r"\s+", " ", match.group(2)).strip()
-                or f"Chapter {match.group(1)}",
+                "chapter_number": chapter_number,
+                "chapter_title": chapter_title,
                 "start_char": start,
                 "end_char": end,
                 "chapter_text": chapter_text,
