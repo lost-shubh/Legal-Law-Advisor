@@ -4,6 +4,7 @@ import unittest
 from pathlib import Path
 
 from scripts.migrate_staging_to_postgres import (
+    map_text_extraction_method,
     row_value,
     sanitize_pg_params,
     split_case_title,
@@ -54,6 +55,14 @@ class MigrationHelperTest(unittest.TestCase):
         self.assertEqual(params["text"], "helloworld")
         self.assertEqual(params["count"], 2)
         self.assertIsNone(params["empty"])
+
+    def test_map_text_extraction_method_normalizes_staging_values(self) -> None:
+        self.assertEqual(map_text_extraction_method("PYMUPDF"), "PDF_TEXT")
+        self.assertEqual(map_text_extraction_method("pdfplumber"), "PDF_TEXT")
+        self.assertEqual(map_text_extraction_method("TESSERACT"), "OCR")
+        self.assertEqual(map_text_extraction_method("PDF_TEXT"), "PDF_TEXT")
+        self.assertEqual(map_text_extraction_method("unexpected"), "UNKNOWN")
+        self.assertIsNone(map_text_extraction_method(None))
 
 
 if __name__ == "__main__":

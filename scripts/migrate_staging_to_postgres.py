@@ -136,6 +136,22 @@ def sanitize_pg_params(params: dict[str, Any]) -> dict[str, Any]:
     return {key: sanitize_pg_value(value) for key, value in params.items()}
 
 
+def map_text_extraction_method(method: str | None) -> str | None:
+    if not method:
+        return None
+    normalized = method.strip().upper()
+    method_map = {
+        "PYMUPDF": "PDF_TEXT",
+        "FITZ": "PDF_TEXT",
+        "PDFPLUMBER": "PDF_TEXT",
+        "TESSERACT": "OCR",
+        "TESSERACT_OCR": "OCR",
+    }
+    allowed = {"PDF_TEXT", "OCR", "MIXED", "MANUAL", "UNKNOWN"}
+    mapped = method_map.get(normalized, normalized)
+    return mapped if mapped in allowed else "UNKNOWN"
+
+
 def upsert_source_document(pg_conn: Any, row: sqlite3.Row) -> int | None:
     sql, _ = require_postgres_dependencies()
     source_id = require_id(
@@ -406,7 +422,7 @@ def migrate_judgment_rows(
                 "pdf_hash": source_doc["content_hash"] if source_doc else None,
                 "raw_text": text_row["raw_text"] if text_row else None,
                 "clean_text": text_row["clean_text"] if text_row else None,
-                "method": text_row["extraction_method"] if text_row else None,
+                "method": map_text_extraction_method(text_row["extraction_method"]) if text_row else None,
                 "page_count": text_row["page_count"] if text_row else row["page_count"],
                 "word_count": text_row["word_count"] if text_row else row["word_count"],
                 "source_document_id": source_document_id,
