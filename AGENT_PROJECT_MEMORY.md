@@ -171,7 +171,7 @@ Last checked from Codex on 2026-06-03.
 - Production migration helper:
   - `scripts/migrate_staging_to_postgres.py`
   - `--dry-run` reports staging counts without requiring PostgreSQL dependencies
-  - actual migration targets staging `source_documents`, `cases`, `judgments` and associated `document_texts`
+  - actual migration targets staging `source_documents`, `statutes`, `sections`, `cases`, `judgments` and associated `document_texts`
   - PostgreSQL/pgvector import is still blocked until WSL/Docker are live
 
 - DOJ/High Court saved-HTML manifest helper:
@@ -196,7 +196,7 @@ python -m compileall apps legal_db scripts tests
 python -m unittest discover -s tests -v
 ```
 
-Last known test count: 40 passing on 2026-06-03.
+Last known test count: 41 passing on 2026-06-03.
 
 ## Next Build Slice
 

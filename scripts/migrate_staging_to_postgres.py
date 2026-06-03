@@ -122,6 +122,10 @@ def require_id(pg_conn: Any, sql: str, params: dict[str, Any]) -> int | None:
     return int(row[0]) if row is not None else None
 
 
+def row_value(row: sqlite3.Row, column_name: str, default: Any = None) -> Any:
+    return row[column_name] if column_name in row.keys() else default
+
+
 def upsert_source_document(pg_conn: Any, row: sqlite3.Row) -> int | None:
     sql, _ = require_postgres_dependencies()
     source_id = require_id(
@@ -167,140 +171,239 @@ def upsert_source_document(pg_conn: Any, row: sqlite3.Row) -> int | None:
     return int(inserted[0]) if inserted is not None else None
 
 
-def migrate_judgment_rows(sqlite_conn: sqlite3.Connection, engine: Engine) -> dict[str, int]:
+def migrate_source_documents(sqlite_conn: sqlite3.Connection, pg_conn: Any) -> tuple[dict[int, int], int]:
+    sqlite_conn.row_factory = sqlite3.Row
+    source_map: dict[int, int] = {}
+    if not sqlite_table_exists(sqlite_conn, "source_documents"):
+        return source_map, 0
+    migrated = 0
+    for row in sqlite_conn.execute("SELECT * FROM source_documents ORDER BY id"):
+        source_document_id = upsert_source_document(pg_conn, row)
+        if source_document_id is not None:
+            source_map[int(row["id"])] = source_document_id
+            migrated += 1
+    return source_map, migrated
+
+
+def migrate_statute_rows(
+    sqlite_conn: sqlite3.Connection,
+    pg_conn: Any,
+    source_map: dict[int, int],
+) -> dict[str, int]:
     sql, _ = require_postgres_dependencies()
-    migrated = {"source_documents": 0, "cases": 0, "judgments": 0}
+    migrated = {"statutes": 0, "sections": 0}
+    sqlite_conn.row_factory = sqlite3.Row
+    if not sqlite_table_exists(sqlite_conn, "statutes"):
+        return migrated
+
+    india_code_source_id = require_id(
+        pg_conn,
+        "SELECT id FROM data_sources WHERE source_code = 'INDIA_CODE'",
+        {},
+    )
+    statute_map: dict[int, int] = {}
+    for row in sqlite_conn.execute("SELECT * FROM statutes ORDER BY id"):
+        inserted = pg_conn.execute(
+            sql(
+                """
+                INSERT INTO statutes
+                (act_name, short_title, year, jurisdiction, source_id, source_url,
+                 content_hash, last_fetched)
+                VALUES (:act_name, :short_title, :year, :jurisdiction, :source_id,
+                        :source_url, :content_hash, NOW())
+                ON CONFLICT (act_name, year, jurisdiction) DO UPDATE SET
+                  short_title = COALESCE(EXCLUDED.short_title, statutes.short_title),
+                  source_id = COALESCE(EXCLUDED.source_id, statutes.source_id),
+                  source_url = COALESCE(EXCLUDED.source_url, statutes.source_url),
+                  content_hash = COALESCE(EXCLUDED.content_hash, statutes.content_hash),
+                  updated_at = NOW()
+                RETURNING id
+                """
+            ),
+            {
+                "act_name": row["act_name"],
+                "short_title": row["short_title"],
+                "year": row["year"],
+                "jurisdiction": row_value(row, "jurisdiction", "CENTRAL") or "CENTRAL",
+                "source_id": india_code_source_id,
+                "source_url": row["source_url"],
+                "content_hash": row["content_hash"],
+            },
+        ).fetchone()
+        if inserted is not None:
+            statute_map[int(row["id"])] = int(inserted[0])
+            migrated["statutes"] += 1
+
+    if not sqlite_table_exists(sqlite_conn, "sections"):
+        return migrated
+
+    for row in sqlite_conn.execute("SELECT * FROM sections ORDER BY id"):
+        statute_id = statute_map.get(int(row["statute_id"]))
+        if statute_id is None:
+            continue
+        source_document_id = source_map.get(int(row["source_document_id"])) if row["source_document_id"] else None
+        inserted = pg_conn.execute(
+            sql(
+                """
+                INSERT INTO sections
+                (statute_id, section_number, section_title, section_text, content_hash,
+                 source_document_id)
+                SELECT :statute_id, :section_number, :section_title, :section_text,
+                       :content_hash, :source_document_id
+                WHERE NOT EXISTS (
+                  SELECT 1 FROM sections
+                  WHERE statute_id = :statute_id
+                    AND section_number = :section_number
+                    AND effective_from IS NULL
+                    AND content_hash IS NOT DISTINCT FROM :content_hash
+                )
+                RETURNING id
+                """
+            ),
+            {
+                "statute_id": statute_id,
+                "section_number": row["section_number"],
+                "section_title": row["section_title"],
+                "section_text": row["section_text"],
+                "content_hash": row["content_hash"],
+                "source_document_id": source_document_id,
+            },
+        ).fetchone()
+        if inserted is not None:
+            migrated["sections"] += 1
+    return migrated
+
+
+def migrate_judgment_rows(
+    sqlite_conn: sqlite3.Connection,
+    pg_conn: Any,
+    source_map: dict[int, int],
+) -> dict[str, int]:
+    sql, _ = require_postgres_dependencies()
+    migrated = {"cases": 0, "judgments": 0}
     sqlite_conn.row_factory = sqlite3.Row
     if not all(
         sqlite_table_exists(sqlite_conn, table)
-        for table in ["source_documents", "cases", "judgments"]
+        for table in ["cases", "judgments"]
     ):
         return migrated
 
-    with engine.begin() as pg_conn:
-        source_map: dict[int, int] = {}
-        for row in sqlite_conn.execute("SELECT * FROM source_documents"):
-            source_document_id = upsert_source_document(pg_conn, row)
-            if source_document_id is not None:
-                source_map[int(row["id"])] = source_document_id
-                migrated["source_documents"] += 1
-
-        case_rows = sqlite_conn.execute("SELECT * FROM cases ORDER BY id").fetchall()
-        case_map: dict[int, int] = {}
-        for row in case_rows:
-            court_id = require_id(
-                pg_conn,
-                "SELECT id FROM courts WHERE court_code = :court_code",
-                {"court_code": row["court_code"]},
-            )
-            source_document_id = None
-            if sqlite_table_exists(sqlite_conn, "judgments"):
-                doc_row = sqlite_conn.execute(
-                    "SELECT source_document_id FROM judgments WHERE case_id = ? ORDER BY id LIMIT 1",
-                    (row["id"],),
-                ).fetchone()
-                if doc_row is not None:
-                    source_document_id = source_map.get(int(doc_row["source_document_id"]))
-            petitioner, respondent = split_case_title(row["title"])
-            inserted = pg_conn.execute(
+    case_rows = sqlite_conn.execute("SELECT * FROM cases ORDER BY id").fetchall()
+    case_map: dict[int, int] = {}
+    for row in case_rows:
+        court_id = require_id(
+            pg_conn,
+            "SELECT id FROM courts WHERE court_code = :court_code",
+            {"court_code": row["court_code"]},
+        )
+        source_document_id = None
+        if sqlite_table_exists(sqlite_conn, "judgments"):
+            doc_row = sqlite_conn.execute(
+                "SELECT source_document_id FROM judgments WHERE case_id = ? ORDER BY id LIMIT 1",
+                (row["id"],),
+            ).fetchone()
+            if doc_row is not None:
+                source_document_id = source_map.get(int(doc_row["source_document_id"]))
+        petitioner, respondent = split_case_title(row["title"])
+        inserted = pg_conn.execute(
+            sql(
+                """
+                INSERT INTO cases
+                (case_number, neutral_citation, court_id, decision_date, status,
+                 petitioner, respondent, source_url, source_document_id)
+                VALUES (:case_number, :neutral_citation, :court_id, :decision_date,
+                        'DECIDED', :petitioner, :respondent, :source_url,
+                        :source_document_id)
+                ON CONFLICT DO NOTHING
+                RETURNING id
+                """
+            ),
+            {
+                "case_number": row["case_number"],
+                "neutral_citation": row["diary_no"] if "INSC" in (row["diary_no"] or "") else None,
+                "court_id": court_id,
+                "decision_date": row["decision_date"],
+                "petitioner": petitioner,
+                "respondent": respondent,
+                "source_url": row["source_url"],
+                "source_document_id": source_document_id,
+            },
+        ).fetchone()
+        if inserted is None:
+            existing = pg_conn.execute(
                 sql(
                     """
-                    INSERT INTO cases
-                    (case_number, neutral_citation, court_id, decision_date, status,
-                     petitioner, respondent, source_url, source_document_id)
-                    VALUES (:case_number, :neutral_citation, :court_id, :decision_date,
-                            'DECIDED', :petitioner, :respondent, :source_url,
-                            :source_document_id)
-                    ON CONFLICT DO NOTHING
-                    RETURNING id
+                    SELECT id FROM cases
+                    WHERE court_id IS NOT DISTINCT FROM :court_id
+                      AND case_number IS NOT DISTINCT FROM :case_number
+                      AND source_url IS NOT DISTINCT FROM :source_url
+                    ORDER BY id DESC LIMIT 1
                     """
                 ),
                 {
-                    "case_number": row["case_number"],
-                    "neutral_citation": row["diary_no"] if "INSC" in (row["diary_no"] or "") else None,
                     "court_id": court_id,
-                    "decision_date": row["decision_date"],
-                    "petitioner": petitioner,
-                    "respondent": respondent,
+                    "case_number": row["case_number"],
                     "source_url": row["source_url"],
-                    "source_document_id": source_document_id,
                 },
             ).fetchone()
-            if inserted is None:
-                existing = pg_conn.execute(
-                    sql(
-                        """
-                        SELECT id FROM cases
-                        WHERE court_id IS NOT DISTINCT FROM :court_id
-                          AND case_number IS NOT DISTINCT FROM :case_number
-                          AND source_url IS NOT DISTINCT FROM :source_url
-                        ORDER BY id DESC LIMIT 1
-                        """
-                    ),
-                    {
-                        "court_id": court_id,
-                        "case_number": row["case_number"],
-                        "source_url": row["source_url"],
-                    },
-                ).fetchone()
-                if existing is None:
-                    continue
-                case_map[int(row["id"])] = int(existing[0])
-            else:
-                case_map[int(row["id"])] = int(inserted[0])
-                migrated["cases"] += 1
-
-        text_by_doc = {}
-        if sqlite_table_exists(sqlite_conn, "document_texts"):
-            for row in sqlite_conn.execute("SELECT * FROM document_texts"):
-                text_by_doc[int(row["source_document_id"])] = row
-
-        for row in sqlite_conn.execute("SELECT * FROM judgments ORDER BY id"):
-            case_id = case_map.get(int(row["case_id"]))
-            source_document_id = source_map.get(int(row["source_document_id"]))
-            if case_id is None or source_document_id is None:
+            if existing is None:
                 continue
-            source_doc = sqlite_conn.execute(
-                "SELECT content_hash FROM source_documents WHERE id = ?",
-                (row["source_document_id"],),
-            ).fetchone()
-            text_row = text_by_doc.get(int(row["source_document_id"]))
-            pg_conn.execute(
-                sql(
-                    """
-                    INSERT INTO judgments
-                    (case_id, court_id, judgment_date, judgment_type, pdf_url, pdf_hash,
-                     raw_text, clean_text, text_extraction_method, page_count, word_count,
-                     source_document_id, extraction_status)
-                    SELECT :case_id, c.court_id, :judgment_date, :judgment_type, :pdf_url,
-                           :pdf_hash, :raw_text, :clean_text, :method, :page_count, :word_count,
-                           :source_document_id, :extraction_status
-                    FROM cases c
-                    WHERE c.id = :case_id
-                    ON CONFLICT (pdf_hash) DO UPDATE SET
-                      clean_text = EXCLUDED.clean_text,
-                      raw_text = EXCLUDED.raw_text,
-                      word_count = EXCLUDED.word_count,
-                      page_count = EXCLUDED.page_count,
-                      extraction_status = EXCLUDED.extraction_status
-                    """
-                ),
-                {
-                    "case_id": case_id,
-                    "judgment_date": row["judgment_date"],
-                    "judgment_type": row["judgment_type"] or "FINAL",
-                    "pdf_url": row["pdf_url"],
-                    "pdf_hash": source_doc["content_hash"] if source_doc else None,
-                    "raw_text": text_row["raw_text"] if text_row else None,
-                    "clean_text": text_row["clean_text"] if text_row else None,
-                    "method": text_row["extraction_method"] if text_row else None,
-                    "page_count": text_row["page_count"] if text_row else row["page_count"],
-                    "word_count": text_row["word_count"] if text_row else row["word_count"],
-                    "source_document_id": source_document_id,
-                    "extraction_status": "DONE" if text_row else "PENDING",
-                },
-            )
-            migrated["judgments"] += 1
+            case_map[int(row["id"])] = int(existing[0])
+        else:
+            case_map[int(row["id"])] = int(inserted[0])
+            migrated["cases"] += 1
+
+    text_by_doc = {}
+    if sqlite_table_exists(sqlite_conn, "document_texts"):
+        for row in sqlite_conn.execute("SELECT * FROM document_texts"):
+            text_by_doc[int(row["source_document_id"])] = row
+
+    for row in sqlite_conn.execute("SELECT * FROM judgments ORDER BY id"):
+        case_id = case_map.get(int(row["case_id"]))
+        source_document_id = source_map.get(int(row["source_document_id"]))
+        if case_id is None or source_document_id is None:
+            continue
+        source_doc = sqlite_conn.execute(
+            "SELECT content_hash FROM source_documents WHERE id = ?",
+            (row["source_document_id"],),
+        ).fetchone()
+        text_row = text_by_doc.get(int(row["source_document_id"]))
+        pg_conn.execute(
+            sql(
+                """
+                INSERT INTO judgments
+                (case_id, court_id, judgment_date, judgment_type, pdf_url, pdf_hash,
+                 raw_text, clean_text, text_extraction_method, page_count, word_count,
+                 source_document_id, extraction_status)
+                SELECT :case_id, c.court_id, :judgment_date, :judgment_type, :pdf_url,
+                       :pdf_hash, :raw_text, :clean_text, :method, :page_count, :word_count,
+                       :source_document_id, :extraction_status
+                FROM cases c
+                WHERE c.id = :case_id
+                ON CONFLICT (pdf_hash) DO UPDATE SET
+                  clean_text = EXCLUDED.clean_text,
+                  raw_text = EXCLUDED.raw_text,
+                  word_count = EXCLUDED.word_count,
+                  page_count = EXCLUDED.page_count,
+                  extraction_status = EXCLUDED.extraction_status
+                """
+            ),
+            {
+                "case_id": case_id,
+                "judgment_date": row["judgment_date"],
+                "judgment_type": row["judgment_type"] or "FINAL",
+                "pdf_url": row["pdf_url"],
+                "pdf_hash": source_doc["content_hash"] if source_doc else None,
+                "raw_text": text_row["raw_text"] if text_row else None,
+                "clean_text": text_row["clean_text"] if text_row else None,
+                "method": text_row["extraction_method"] if text_row else None,
+                "page_count": text_row["page_count"] if text_row else row["page_count"],
+                "word_count": text_row["word_count"] if text_row else row["word_count"],
+                "source_document_id": source_document_id,
+                "extraction_status": "DONE" if text_row else "PENDING",
+            },
+        )
+        migrated["judgments"] += 1
     return migrated
 
 
@@ -328,7 +431,11 @@ def migrate(db_path: str | Path, database_url: str | None, dry_run: bool) -> Mig
     sqlite_conn = sqlite3.connect(path)
     sqlite_conn.row_factory = sqlite3.Row
     try:
-        migrated = migrate_judgment_rows(sqlite_conn, engine)
+        with engine.begin() as pg_conn:
+            source_map, source_count = migrate_source_documents(sqlite_conn, pg_conn)
+            migrated = {"source_documents": source_count}
+            migrated.update(migrate_statute_rows(sqlite_conn, pg_conn, source_map))
+            migrated.update(migrate_judgment_rows(sqlite_conn, pg_conn, source_map))
         return MigrationSummary(True, True, False, counts, migrated, errors)
     except Exception as exc:
         errors.append(str(exc))

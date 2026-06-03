@@ -36,3 +36,5 @@ Run the actual migration only after WSL/Docker/PostgreSQL are live and `sql/001_
 python .\scripts\migrate_staging_to_postgres.py
 ```
 
+This migrates staging source documents, statutes, sections, cases, judgments and extracted judgment text.
+

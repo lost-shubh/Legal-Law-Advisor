@@ -196,7 +196,7 @@ Then migrate staging judgment rows:
 python .\scripts\migrate_staging_to_postgres.py
 ```
 
-The helper currently migrates staging `source_documents`, `cases`, `judgments` and associated extracted `document_texts` into the production schema.
+The helper currently migrates staging `source_documents`, `statutes`, `sections`, `cases`, `judgments` and associated extracted `document_texts` into the production schema.
 
 ## Next Source-Specific Scrapers
 

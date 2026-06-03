@@ -29,7 +29,7 @@ Completed so far:
 - Judgment ingestion tracking with job/item status, manifest ingestion, PDF hashing, raw PDF storage path, case/judgment inserts and optional text extraction.
 - Supreme Court/e-SCR manifest generator that parses saved SCR/e-SCR result HTML or accessible result pages into standard judgment manifests.
 - Saved-result HTML manifest generator for DOJ, Delhi High Court and Bombay High Court result pages.
-- SQLite-to-PostgreSQL migration helper with dry-run counts for staging judgment rows.
+- SQLite-to-PostgreSQL migration helper with dry-run counts for staging source documents, statutes, sections, judgments and extracted judgment text.
 - OCR/text quality scoring and extraction gating for too-short or low-quality judgment text.
 - Automated tests covering API routes, retrieval, local semantic search, similar cases, case intake, citation parsing, chunking, ingestion tracking, manifest ingestion and SCI/e-SCR manifest generation.
 

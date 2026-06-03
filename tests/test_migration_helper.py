@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scripts.migrate_staging_to_postgres import split_case_title, staging_counts
+from scripts.migrate_staging_to_postgres import row_value, split_case_title, staging_counts
 
 
 class MigrationHelperTest(unittest.TestCase):
@@ -29,6 +29,19 @@ class MigrationHelperTest(unittest.TestCase):
         self.assertEqual(counts["cases"], 2)
         self.assertEqual(counts["judgments"], 0)
         self.assertEqual(counts["staging_embeddings"], 0)
+
+    def test_row_value_returns_default_for_missing_column(self) -> None:
+        conn = sqlite3.connect(":memory:")
+        conn.row_factory = sqlite3.Row
+        try:
+            conn.execute("CREATE TABLE example (name TEXT)")
+            conn.execute("INSERT INTO example (name) VALUES ('BNS')")
+            row = conn.execute("SELECT * FROM example").fetchone()
+        finally:
+            conn.close()
+
+        self.assertEqual(row_value(row, "name"), "BNS")
+        self.assertEqual(row_value(row, "missing", "fallback"), "fallback")
 
 
 if __name__ == "__main__":
