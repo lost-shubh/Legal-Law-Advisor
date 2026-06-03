@@ -59,6 +59,11 @@ Current production PostgreSQL counts after migration:
 - cases: 25
 - judgments: 25
 - judgment words: 442,053
+- embeddings: 6,613
+- section embeddings: 5,421
+- judgment chunk embeddings: 1,192
+- embedding dimensions: 1,536
+- embedding model: `local-hash-embedding-v1`
 
 Quality checks:
 
@@ -67,6 +72,7 @@ Quality checks:
 - duplicate PDF hashes: 0
 - duplicate source documents: 0
 - duplicate migrated cases: 0
+- embeddings with wrong dimension: 0
 - decided cases without outcomes: 25
 
 ## Production Corpus Target
@@ -114,13 +120,11 @@ The latest 25 official Supreme Court judgment PDFs visible on the Supreme Court 
 - full Law Commission report corpus
 - full OCR workflow for scanned High Court and district PDFs at scale
 - production AI extraction/outcome rows in PostgreSQL
-- production pgvector embeddings/vector search rows
 - citation graph
-- PostgreSQL/pgvector production import
 
 ## Next Steps
 
-1. Build production embedding import for sections and judgment chunks.
-2. Build production extraction/outcome import for migrated judgments.
+1. Build production extraction/outcome import for migrated judgments.
+2. Import legal books/materials into PostgreSQL and embed book chunks.
 3. Generate DOJ/Delhi/Bombay manifests from saved official result HTML and ingest them.
 4. Continue ingestion with Gazette, High Court live collectors, and eCourts pipelines.

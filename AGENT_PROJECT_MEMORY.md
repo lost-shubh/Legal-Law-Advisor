@@ -51,6 +51,10 @@ Last checked from Codex on 2026-06-03.
   - staging migration completed successfully at commit `19e9c16`
   - production PostgreSQL now has 95 source documents, 13 data sources, 16 statutes, 5,421 sections, 25 cases and 25 judgments
   - production judgments have 442,053 total words and 0 missing `clean_text`
+  - production embedding import completed successfully after commit `723919e`
+  - production PostgreSQL now has 6,613 pgvector embeddings: 5,421 `SECTION` and 1,192 `JUDGMENT_CHUNK`
+  - all production embeddings are 1536-dimensional local hash embeddings
+  - API search/admin/chat status now prefer PostgreSQL retrieval and fall back to SQLite only when PostgreSQL is unavailable
   - duplicate source-document/case checks returned 0
   - 25 decided cases have no `outcomes` rows yet; production AI outcome migration/extraction remains future work
 
@@ -130,6 +134,17 @@ Last checked from Codex on 2026-06-03.
   - semantic mode falls back to lexical search when embeddings are absent
   - active Codex checkout has 649 generated judgment embedding chunks in ignored SQLite data
 
+- Production pgvector retrieval:
+  - `scripts/build_pg_embeddings.py`
+  - `legal_db.search.embeddings.build_production_embeddings()`
+  - `legal_db.retrieval.production.ProductionRetrievalService`
+  - `legal_db.retrieval.service.LegalRetrievalService`
+  - local deterministic 1536-dimensional embeddings in PostgreSQL `embeddings`
+  - production full-text lexical search over sections, judgments and book chunks
+  - production pgvector semantic search over section, judgment chunk and book chunk embeddings
+  - hybrid search merges production lexical and semantic results
+  - active `F:\indian-legal-database` PostgreSQL has 6,613 production embeddings
+
 - Local extraction model MVP:
   - `legal_db.ai.extract.local_extract_judgment()`
   - `scripts/extract_staging_judgments.py`
@@ -197,7 +212,7 @@ Last checked from Codex on 2026-06-03.
 - WSL/Docker/PostgreSQL are now unblocked in the `F:\indian-legal-database` checkout.
 - PostgreSQL/pgvector production import for current staging statutes/sections/judgments is complete.
 - Do not pull `llama3.1:8b`; continue with `llama3.2:3b` default and `llama3.2:1b` fallback.
-- Remaining production gaps: outcomes, production embeddings, production extraction records, legal books/material import, High Court collectors at scale, Gazette ingestion, citation graph and frontend/admin UI.
+- Remaining production gaps: outcomes, production extraction records, legal books/material import, High Court collectors at scale, Gazette ingestion, citation graph and frontend/admin UI.
 
 ## Verification Last Known Good
 
@@ -206,14 +221,14 @@ python -m compileall apps legal_db scripts tests
 python -m unittest discover -s tests -v
 ```
 
-Last known test count: 41 passing on 2026-06-03.
+Last known test count: 47 passing on 2026-06-03.
 
 ## Next Build Slice
 
 Continue the data/backend scale path:
 
-1. Build/run production embedding import into PostgreSQL `embeddings` from the imported 25 judgments and 5,421 sections.
-2. Build/run production extraction/outcome import for the 25 imported judgments.
+1. Build/run production extraction/outcome import for the 25 imported judgments.
+2. Import the 3 legal books/materials, 26 chapters and 332 chunks from staging into PostgreSQL.
 3. Collect saved official DOJ/Delhi/Bombay result HTML and generate manifests with `scripts/generate_hc_manifest.py`.
 4. Ingest generated manifests with `scripts/ingest_judgments.py`.
 5. Run OCR/extraction/embedding scripts over the expanded corpus.
@@ -223,4 +238,4 @@ Continue the data/backend scale path:
 
 1. Add live source collectors for DOJ, High Courts and eCourts when portal behavior is known.
 2. Build basic citizen/admin frontend pages after the corpus reaches a useful size.
-3. Replace local deterministic hash embeddings/extraction with production pgvector/OpenAI or local embedding/extraction models where practical.
+3. Replace deterministic local production embeddings/extraction with stronger OpenAI or local models where practical.
