@@ -331,6 +331,25 @@ def migrate_judgment_rows(
             if doc_row is not None:
                 source_document_id = source_map.get(int(doc_row["source_document_id"]))
         petitioner, respondent = split_case_title(row["title"])
+        existing = pg_conn.execute(
+            sql(
+                """
+                SELECT id FROM cases
+                WHERE court_id IS NOT DISTINCT FROM :court_id
+                  AND case_number IS NOT DISTINCT FROM :case_number
+                  AND source_url IS NOT DISTINCT FROM :source_url
+                ORDER BY id ASC LIMIT 1
+                """
+            ),
+            sanitize_pg_params({
+                "court_id": court_id,
+                "case_number": row["case_number"],
+                "source_url": row["source_url"],
+            }),
+        ).fetchone()
+        if existing is not None:
+            case_map[int(row["id"])] = int(existing[0])
+            continue
         inserted = pg_conn.execute(
             sql(
                 """

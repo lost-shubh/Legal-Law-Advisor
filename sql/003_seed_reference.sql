@@ -11,7 +11,8 @@ VALUES
   ('NJDG', 'National Judicial Data Grid', 'COURT_METADATA', 'https://doj.gov.in/the-national-judicial-data-grid-njdg/', 'INDIA', 'Aggregate judicial data, not a full public case-file API.'),
   ('CBSE', 'Central Board of Secondary Education Academic Unit', 'REFERENCE', 'https://cbseacademic.nic.in/', 'INDIA', 'Official legal studies textbooks and support material.'),
   ('LAW_COMMISSION', 'Law Commission of India', 'REFERENCE', 'https://lawcommissionofindia.nic.in/', 'INDIA', 'Official law reform reports and category reports.'),
-  ('NALSA', 'National Legal Services Authority', 'REFERENCE', 'https://nalsa.gov.in/', 'INDIA', 'Official legal aid manuals, schemes and handbooks where public.')
+  ('NALSA', 'National Legal Services Authority', 'REFERENCE', 'https://nalsa.gov.in/', 'INDIA', 'Official legal aid manuals, schemes and handbooks where public.'),
+  ('CGIT', 'Central Government Industrial Tribunal', 'REFERENCE', 'https://cgit.labour.gov.in/', 'INDIA', 'Industrial tribunal public reference material and labour-law documents.')
 ON CONFLICT (source_code) DO NOTHING;
 
 INSERT INTO courts (court_code, court_name, court_level, state)
