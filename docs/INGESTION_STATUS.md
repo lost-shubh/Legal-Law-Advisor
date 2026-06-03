@@ -30,6 +30,7 @@ Current active Codex checkout staging counts:
 - Supreme Court cases: 25
 - Supreme Court judgments: 25
 - extracted judgment words: 239,258
+- local staging embedding chunks: 649
 - statutes: 0 in the active `C:\Users\Admin\Legal-Law-Advisor` staging DB
 - legal books/materials: 0 in the active `C:\Users\Admin\Legal-Law-Advisor` staging DB
 

@@ -9,6 +9,7 @@ class SearchRequest(BaseModel):
     query: str = Field(..., min_length=2)
     limit: int = Field(default=10, ge=1, le=50)
     source_types: list[str] | None = None
+    mode: str = Field(default="lexical")
 
 
 class SearchResultModel(BaseModel):

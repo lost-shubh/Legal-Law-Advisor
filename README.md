@@ -20,13 +20,13 @@ Completed so far:
 - Priority statute and section ingestion scaffold, with current staging data including `16` statutes and `5,421` sections.
 - Legal books/materials ingestion with chapters and chunks, currently `3` materials, `26` chapters and `332` chunks in staging.
 - FastAPI vertical slice with search, chat, corpus progress, ingestion status, Ollama status, case analysis and similar-cases routes.
-- Retrieval MVP over statutes, books and judgment text.
+- Retrieval MVP over statutes, books and judgment text, with lexical, semantic and hybrid search modes.
 - Local Ollama integration with configured `llama3.2:3b` default and `llama3.2:1b` fallback.
 - Chat readiness status that checks both the selected Ollama model and legal corpus availability.
 - Case analyzer MVP that detects issue tags, dates, evidence categories, missing documents, urgency warnings and related legal context.
 - Judgment ingestion tracking with job/item status, manifest ingestion, PDF hashing, raw PDF storage path, case/judgment inserts and optional text extraction.
 - Supreme Court/e-SCR manifest generator that parses saved SCR/e-SCR result HTML or accessible result pages into standard judgment manifests.
-- Automated tests covering API routes, retrieval, similar cases, case intake, citation parsing, chunking, ingestion tracking, manifest ingestion and SCI/e-SCR manifest generation.
+- Automated tests covering API routes, retrieval, local semantic search, similar cases, case intake, citation parsing, chunking, ingestion tracking, manifest ingestion and SCI/e-SCR manifest generation.
 
 Current staging corpus snapshot:
 
@@ -38,7 +38,8 @@ Legal materials:   3
 Book chapters:     26
 Book chunks:       332
 Document texts:    44
-Test suite:        25 passing tests
+Embedding chunks:  649 local staging chunks
+Test suite:        28 passing tests
 ```
 
 Main work still left:
@@ -46,7 +47,7 @@ Main work still left:
 - Ingest the first `1,000` official judgments, then scale toward `10,000`.
 - Build source-specific collectors for High Courts, DOJ judgment portal and district/eCourts data.
 - Run OCR and AI extraction at scale.
-- Add embeddings and semantic search.
+- Replace local deterministic hash embeddings with production pgvector/OpenAI or local embedding models.
 - Build the citizen frontend, lawyer review app and admin dashboard.
 - Deploy the production PostgreSQL/pgvector stack and add operational monitoring.
 
@@ -128,6 +129,12 @@ Track progress:
 
 ```powershell
 python .\scripts\corpus_progress.py
+```
+
+Build local deterministic staging embeddings:
+
+```powershell
+python .\scripts\build_staging_embeddings.py
 ```
 
 Ingest judgment PDFs from a manifest:

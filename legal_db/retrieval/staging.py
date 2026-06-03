@@ -7,6 +7,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from legal_db.search.embeddings import cosine_similarity, local_hash_embedding
+
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_DB_PATH = ROOT / "data" / "legal_corpus_staging.sqlite"
@@ -155,9 +157,43 @@ class StagingRetrievalService:
                 "legal_books": count_if_exists(conn, "legal_books"),
                 "book_chunks": count_if_exists(conn, "book_chunks"),
                 "cases": count_if_exists(conn, "cases"),
+                "staging_embeddings": count_if_exists(conn, "staging_embeddings"),
             }
 
-    def search(self, query: str, limit: int = 10, source_types: list[str] | None = None) -> list[SearchResult]:
+    def search(
+        self,
+        query: str,
+        limit: int = 10,
+        source_types: list[str] | None = None,
+        mode: str = "lexical",
+    ) -> list[SearchResult]:
+        normalized_mode = mode.lower().strip()
+        bounded_limit = max(min(limit, 50), 1)
+        if normalized_mode == "semantic":
+            semantic_results = self.semantic_search(query, limit=bounded_limit, source_types=source_types)
+            if semantic_results or self._has_staging_embeddings(source_types=source_types):
+                return semantic_results[:bounded_limit]
+            return self._lexical_search(query, limit=bounded_limit, source_types=source_types)
+        if normalized_mode == "hybrid":
+            semantic_results = self.semantic_search(
+                query,
+                limit=bounded_limit * 2,
+                source_types=source_types,
+            )
+            lexical_results = self._lexical_search(
+                query,
+                limit=bounded_limit * 2,
+                source_types=source_types,
+            )
+            return self._merge_ranked_results(semantic_results + lexical_results, bounded_limit)
+        return self._lexical_search(query, limit=bounded_limit, source_types=source_types)
+
+    def _lexical_search(
+        self,
+        query: str,
+        limit: int = 10,
+        source_types: list[str] | None = None,
+    ) -> list[SearchResult]:
         terms = tokenize(query)
         if not terms or not self.db_path.exists():
             return []
@@ -172,6 +208,123 @@ class StagingRetrievalService:
                 results.extend(self._search_judgments(conn, terms))
         results.sort(key=lambda item: item.score, reverse=True)
         return results[: max(min(limit, 50), 1)]
+
+    def semantic_search(
+        self,
+        query: str,
+        limit: int = 10,
+        source_types: list[str] | None = None,
+    ) -> list[SearchResult]:
+        allowed = set(source_types or ["JUDGMENT"])
+        if "JUDGMENT" not in allowed or not query.strip() or not self.db_path.exists():
+            return []
+        with self._connect() as conn:
+            required_tables = ["staging_embeddings", "cases", "judgments"]
+            if not all(table_exists(conn, table_name) for table_name in required_tables):
+                return []
+            rows = conn.execute(
+                """
+                SELECT
+                  e.source_id,
+                  e.chunk_index,
+                  e.chunk_text,
+                  e.embedding_json,
+                  e.model_name,
+                  e.dimensions,
+                  c.title,
+                  c.case_number,
+                  c.decision_date,
+                  c.source_url AS case_source_url,
+                  j.pdf_url
+                FROM staging_embeddings e
+                JOIN judgments j ON j.id = e.source_id
+                JOIN cases c ON c.id = j.case_id
+                WHERE e.source_type = 'JUDGMENT_CHUNK'
+                """
+            ).fetchall()
+
+        query_vectors: dict[int, list[float]] = {}
+        best_by_source: dict[int, SearchResult] = {}
+        query_terms = tokenize(query)
+        for (
+            source_id,
+            chunk_index,
+            chunk_text,
+            embedding_json,
+            model_name,
+            dimensions,
+            title,
+            case_number,
+            decision_date,
+            case_source_url,
+            pdf_url,
+        ) in rows:
+            try:
+                vector = json.loads(embedding_json)
+            except json.JSONDecodeError:
+                continue
+            if not isinstance(vector, list):
+                continue
+            dimensions = int(dimensions)
+            if len(vector) != dimensions:
+                continue
+            if dimensions not in query_vectors:
+                query_vectors[dimensions] = local_hash_embedding(query, dimensions=dimensions)
+            query_vector = query_vectors[dimensions]
+            cosine_score = cosine_similarity(query_vector, [float(value) for value in vector])
+            lexical_score = self._similarity_score(chunk_text or "", query_terms)
+            score = (cosine_score * 0.35) + (lexical_score * 0.65)
+            if score <= 0.05:
+                continue
+            result = SearchResult(
+                source_type="JUDGMENT_SEMANTIC",
+                title=f"{title or 'Supreme Court Judgment'} ({case_number or 'case number unavailable'})",
+                snippet=make_snippet(chunk_text or "", query_terms),
+                score=round(float(score), 6),
+                source_url=pdf_url or case_source_url,
+                metadata={
+                    "case_number": case_number,
+                    "decision_date": decision_date,
+                    "chunk_index": chunk_index,
+                    "model_name": model_name,
+                },
+            )
+            current = best_by_source.get(int(source_id))
+            if current is None or result.score > current.score:
+                best_by_source[int(source_id)] = result
+
+        results = list(best_by_source.values())
+        results.sort(key=lambda item: item.score, reverse=True)
+        return results[: max(min(limit, 50), 1)]
+
+    def _has_staging_embeddings(self, source_types: list[str] | None = None) -> bool:
+        allowed = set(source_types or ["JUDGMENT"])
+        if "JUDGMENT" not in allowed or not self.db_path.exists():
+            return False
+        with self._connect() as conn:
+            if not table_exists(conn, "staging_embeddings"):
+                return False
+            return (
+                conn.execute(
+                    "SELECT COUNT(*) FROM staging_embeddings WHERE source_type = 'JUDGMENT_CHUNK'"
+                ).fetchone()[0]
+                > 0
+            )
+
+    def _merge_ranked_results(
+        self,
+        results: list[SearchResult],
+        limit: int,
+    ) -> list[SearchResult]:
+        merged: dict[tuple[str, str | None], SearchResult] = {}
+        for result in results:
+            key = (result.title, result.source_url)
+            current = merged.get(key)
+            if current is None or result.score > current.score:
+                merged[key] = result
+        ranked = list(merged.values())
+        ranked.sort(key=lambda item: item.score, reverse=True)
+        return ranked[:limit]
 
     def retrieve_context(self, query: str, limit: int = 5) -> tuple[str, list[SearchResult]]:
         results = self.search(query, limit=limit)

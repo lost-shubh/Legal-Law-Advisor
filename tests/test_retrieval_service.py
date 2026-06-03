@@ -4,6 +4,7 @@ import sqlite3
 from pathlib import Path
 
 from legal_db.retrieval.staging import StagingRetrievalService, make_snippet, tokenize
+from legal_db.search.embeddings import build_staging_judgment_embeddings
 
 
 def create_similar_case_db(db_path: Path, *, text: str) -> None:
@@ -119,4 +120,47 @@ class RetrievalServiceTest(unittest.TestCase):
         self.assertEqual(results[0].pdf_url, "https://example.test/judgment.pdf")
         self.assertGreater(results[0].score, 0)
         self.assertIn("cheque", results[0].snippet.lower())
+
+    def test_semantic_search_falls_back_to_lexical_when_embeddings_missing(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            db_path = Path(temp_dir) / "staging.sqlite"
+            create_similar_case_db(
+                db_path,
+                text="Cheque dishonour statutory notice bank return memo evidence.",
+            )
+            service = StagingRetrievalService(db_path)
+            results = service.search(
+                "cheque dishonour notice",
+                source_types=["JUDGMENT"],
+                mode="semantic",
+            )
+
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].source_type, "JUDGMENT")
+
+    def test_semantic_search_uses_populated_staging_embeddings(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            db_path = Path(temp_dir) / "staging.sqlite"
+            create_similar_case_db(
+                db_path,
+                text="Cheque dishonour statutory notice bank return memo evidence.",
+            )
+            summary = build_staging_judgment_embeddings(
+                db_path,
+                dimensions=32,
+                chunk_size=20,
+                overlap=0,
+            )
+            service = StagingRetrievalService(db_path)
+            results = service.search(
+                "cheque dishonour notice",
+                source_types=["JUDGMENT"],
+                mode="semantic",
+            )
+
+        self.assertEqual(summary.source_rows, 1)
+        self.assertGreater(summary.chunks, 0)
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].source_type, "JUDGMENT_SEMANTIC")
+        self.assertIn("model_name", results[0].metadata)
 

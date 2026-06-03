@@ -29,6 +29,7 @@ Last checked from Codex on 2026-06-03.
   - 25 judgments
   - 25 document_texts
   - 239,258 extracted words
+  - 649 local deterministic staging embedding chunks
   - 2 completed ingestion jobs; the first extraction pass failed before the PyMuPDF
     fallback was added, and the second pass populated text successfully
 - Older `F:\indian-legal-database` staging snapshot recorded in committed docs/manifests:
@@ -103,6 +104,14 @@ Last checked from Codex on 2026-06-03.
   - returns case title, case number, decision date, source URL/PDF URL, score and snippet
   - safe empty result when the staging DB is missing or has a partial schema
 
+- Semantic search MVP:
+  - `scripts/build_staging_embeddings.py`
+  - `legal_db.search.embeddings.build_staging_judgment_embeddings()`
+  - local deterministic hash embeddings stored in the staging SQLite `staging_embeddings` table
+  - `POST /v1/search` accepts `mode: "lexical"`, `mode: "semantic"` and `mode: "hybrid"`
+  - semantic mode falls back to lexical search when embeddings are absent
+  - active Codex checkout has 649 generated judgment embedding chunks in ignored SQLite data
+
 - Judgment ingestion tracking:
   - `legal_db/ingest/jobs.py`
   - `legal_db/ingest/judgments.py`
@@ -140,25 +149,25 @@ python -m compileall apps legal_db scripts tests
 python -m unittest discover -s tests -v
 ```
 
-Last known test count: 25 passing on 2026-06-03.
+Last known test count: 28 passing on 2026-06-03.
 
 ## Next Build Slice
 
-Add embeddings/semantic search:
+Build basic frontend pages:
 
-1. Start with a local/staging-friendly embedding path for `document_texts.clean_text`.
-2. Keep dependency and credential requirements explicit; do not require OpenAI to run basic tests.
-3. Add deterministic fallback behavior when embeddings are absent.
-4. Expose semantic search through the existing retrieval/API path without breaking lexical search.
-5. Add tests for missing embeddings, populated embeddings and API response shape.
+1. Inspect `apps/web`, `apps/admin` and existing frontend scaffolding before adding files.
+2. Build first usable pages for:
+   - ask legal question
+   - analyze case
+   - search judgments
+   - corpus progress
+3. Keep the UI quiet and operational, not a landing page.
+4. Start a local dev server if the frontend requires one, and verify in browser.
+5. Keep API contracts aligned with the current FastAPI routes.
 6. Run compile/tests.
 7. Commit source/docs changes only; do not commit raw PDFs, local manifests or SQLite.
 
 ## After That
 
-1. Build basic frontend pages:
-   - ask legal question
-   - analyze case
-   - search judgments
-   - corpus progress
-2. Add admin dashboard for ingestion jobs and corpus progress.
+1. Add admin dashboard for ingestion jobs and corpus progress.
+2. Replace local deterministic hash embeddings with production pgvector/OpenAI or local embedding models.

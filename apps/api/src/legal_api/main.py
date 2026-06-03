@@ -66,6 +66,7 @@ try:
             request.query,
             limit=request.limit,
             source_types=request.source_types,
+            mode=request.mode,
         )
         return SearchResponse(query=request.query, results=[item.to_dict() for item in results])
 

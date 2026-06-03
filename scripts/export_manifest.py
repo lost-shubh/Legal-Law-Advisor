@@ -70,6 +70,7 @@ def build_manifest() -> dict[str, object]:
                 "legal_books": count_table(conn, "legal_books"),
                 "book_chapters": count_table(conn, "book_chapters"),
                 "book_chunks": count_table(conn, "book_chunks"),
+                "staging_embeddings": count_table(conn, "staging_embeddings"),
             },
             "progress": {
                 "target_judgments": target_judgments,

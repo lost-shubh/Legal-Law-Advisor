@@ -116,6 +116,12 @@ The model settings are tuned for local use:
 
 ## Embedding Model
 
+Current local MVP:
+
+- `scripts/build_staging_embeddings.py` builds deterministic hash embeddings for parsed judgment chunks in the staging SQLite DB.
+- `POST /v1/search` accepts `mode: "semantic"` or `mode: "hybrid"`.
+- This path needs no OpenAI key and keeps tests/local demos working before PostgreSQL/pgvector is available.
+
 For MVP:
 
 - hosted: `text-embedding-3-small`

@@ -29,11 +29,24 @@ POST /v1/similar-cases
 {
   "query": "constitution basic structure",
   "limit": 5,
-  "source_types": ["SECTION", "BOOK_CHUNK", "JUDGMENT"]
+  "source_types": ["SECTION", "BOOK_CHUNK", "JUDGMENT"],
+  "mode": "lexical"
 }
 ```
 
 Search currently uses a local lightweight scorer over the staging SQLite corpus. Production should replace this with PostgreSQL full-text search + pgvector + reranking.
+
+Supported modes:
+
+- `lexical`: deterministic token matching over available staging tables. This is the default.
+- `semantic`: local deterministic hash embeddings over staging judgment chunks. If embeddings are missing, it falls back to lexical search.
+- `hybrid`: combines local semantic judgment search and lexical search.
+
+Build local staging embeddings:
+
+```powershell
+python .\scripts\build_staging_embeddings.py
+```
 
 ## Ingestion Status
 
