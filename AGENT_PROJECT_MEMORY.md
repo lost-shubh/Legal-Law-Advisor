@@ -3,7 +3,7 @@
 Use this file before continuing project work. Do not repeatedly rediscover the same repo state.
 
 Tracked memory file: `AGENT_PROJECT_MEMORY.md`.
-Last checked from Codex on 2026-06-04.
+Last checked from Codex on 2026-06-08.
 
 ## Working Rule
 
@@ -79,6 +79,14 @@ Last checked from Codex on 2026-06-04.
     - `SECTION` embeddings rebuilt successfully: 38,094 section embeddings
     - live PostgreSQL now has 41,139 total embeddings: 38,094 `SECTION`, 1,192 `JUDGMENT_CHUNK`, 1,853 `BOOK_CHUNK`
     - quality checks remain 9/9 passing; search smoke tests return imported Central Act sections
+  - official/public new-criminal-laws import completed at commit `9f7a763`:
+    - downloader fetched 21 official/public MHA/NCRB files into ignored local data
+    - imported as `NEW_CRIMINAL_LAWS_PUBLIC`: MHA BNS/BSA/BNSS Act PDFs, NCRB Sankalan PDFs/HTML tables/schedules and Gazette PDFs
+    - live PostgreSQL now has 21 `NEW_CRIMINAL_LAWS_PUBLIC` source documents/books, 282 chapters and 1,524 chunks
+    - live PostgreSQL now has 63 total legal books and 3,377 total book chunks
+    - `BOOK_CHUNK` embeddings rebuilt successfully: 3,377 book embeddings
+    - live PostgreSQL now has 42,663 total embeddings: 38,094 `SECTION`, 1,192 `JUDGMENT_CHUNK`, 3,377 `BOOK_CHUNK`
+    - quality checks remain 9/9 passing; case-brief smoke test for private-defence homicide returns BNS sections 34, 35, 37, 38 and 41 as leading sources
   - API search/admin/chat status now prefer PostgreSQL retrieval and fall back to SQLite only when PostgreSQL is unavailable
   - duplicate source-document/case checks returned 0
   - quality checks are clean: 0 judgments without text, 0 impossible dates, 0 decided cases without outcomes, 0 duplicate PDF hashes, 0 wrong-dimension embeddings, 0 unvalidated AI facts
@@ -210,7 +218,7 @@ Last checked from Codex on 2026-06-04.
   - production full-text lexical search over sections, judgments and book chunks
   - production pgvector semantic search over section, judgment chunk and book chunk embeddings
   - hybrid search merges production lexical and semantic results
-  - active `F:\indian-legal-database` PostgreSQL has 6,945 production embeddings
+  - active `F:\indian-legal-database` PostgreSQL has 42,663 production embeddings
 
 - Production extraction/outcomes:
   - `legal_db.ai.production.extract_production_judgments()`
@@ -324,7 +332,7 @@ python -m compileall apps legal_db scripts tests
 python -m unittest discover -s tests -v
 ```
 
-Last known test count: 75 passing on 2026-06-04.
+Last known test count: 77 passing on 2026-06-08.
 
 ## Next Build Slice
 
