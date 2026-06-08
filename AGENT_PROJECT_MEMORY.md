@@ -87,6 +87,7 @@ Last checked from Codex on 2026-06-08.
     - `BOOK_CHUNK` embeddings rebuilt successfully: 3,377 book embeddings
     - live PostgreSQL now has 42,663 total embeddings: 38,094 `SECTION`, 1,192 `JUDGMENT_CHUNK`, 3,377 `BOOK_CHUNK`
     - quality checks remain 9/9 passing; case-brief smoke test for private-defence homicide returns BNS sections 34, 35, 37, 38 and 41 as leading sources
+  - `scripts/corpus_progress.py` now prefers PostgreSQL production counts when available and reports the above live corpus numbers with `--database-url`
   - API search/admin/chat status now prefer PostgreSQL retrieval and fall back to SQLite only when PostgreSQL is unavailable
   - duplicate source-document/case checks returned 0
   - quality checks are clean: 0 judgments without text, 0 impossible dates, 0 decided cases without outcomes, 0 duplicate PDF hashes, 0 wrong-dimension embeddings, 0 unvalidated AI facts
@@ -332,7 +333,7 @@ python -m compileall apps legal_db scripts tests
 python -m unittest discover -s tests -v
 ```
 
-Last known test count: 77 passing on 2026-06-08.
+Last known test count: 80 passing on 2026-06-08.
 
 ## Next Build Slice
 
