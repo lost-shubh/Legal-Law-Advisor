@@ -145,6 +145,28 @@ class CaseAnalyzeResponse(BaseModel):
     error: str | None = None
 
 
+class CaseBriefRequest(BaseModel):
+    case_text: str = Field(..., min_length=20)
+    context_limit: int = Field(default=6, ge=1, le=10)
+    max_sources: int = Field(default=8, ge=0, le=20)
+
+
+class CaseBriefResponse(BaseModel):
+    title: str
+    summary: str
+    issue_tags: list[str]
+    confidence: float
+    key_dates: list[str]
+    evidence_found: dict[str, list[str]]
+    missing_documents: list[str]
+    urgency_warnings: list[str]
+    research_questions: list[str]
+    next_steps: list[str]
+    source_digest: list[SearchResultModel]
+    disclaimer: str
+    markdown: str
+
+
 class SimilarCasesRequest(BaseModel):
     case_text: str = Field(..., min_length=20)
     limit: int = Field(default=10, ge=1, le=50)

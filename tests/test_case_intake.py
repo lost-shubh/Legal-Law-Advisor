@@ -2,6 +2,7 @@ import unittest
 
 from legal_db.case_intake.analyzer import analyze_case_text
 from legal_db.case_intake.pipeline import CaseIntakePipeline
+from legal_db.retrieval.staging import SearchResult
 
 
 class CaseIntakeTest(unittest.TestCase):
@@ -68,3 +69,33 @@ class CaseIntakeTest(unittest.TestCase):
         )
         self.assertIn("private defence", retrieval.query.lower())
         self.assertIn("house-breaking", retrieval.query.lower())
+
+    def test_case_pipeline_builds_research_brief(self) -> None:
+        class FakeRetrievalService:
+            def retrieve_context(self, query: str, limit: int = 5) -> tuple[str, list]:
+                return (
+                    "Negotiable Instruments Act Section 138 context",
+                    [
+                        SearchResult(
+                            source_type="SECTION",
+                            title="NI Act Section 138",
+                            snippet="Dishonour of cheque for insufficiency of funds.",
+                            score=0.91,
+                            source_url="https://example.test/ni-act-138",
+                        )
+                    ],
+                )
+
+        brief = CaseIntakePipeline(retrieval_service=FakeRetrievalService()).build_brief(
+            "My cheque was dishonoured on 12/04/2025. I sent a legal notice "
+            "and have the bank return memo, cheque copy and WhatsApp messages. "
+            "The accused did not repay the amount.",
+            max_sources=3,
+        )
+
+        self.assertEqual(brief.title, "Cheque Bounce Research Brief")
+        self.assertIn("CHEQUE_BOUNCE", brief.issue_tags)
+        self.assertIn("dishonoured cheque copy", brief.missing_documents)
+        self.assertTrue(any("timelines" in question for question in brief.research_questions))
+        self.assertEqual(brief.source_digest[0].title, "NI Act Section 138")
+        self.assertIn("NI Act Section 138", brief.to_markdown())

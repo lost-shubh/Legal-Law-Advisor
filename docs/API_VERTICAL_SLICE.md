@@ -23,6 +23,7 @@ GET  /v1/extractions/status
 POST /v1/search
 POST /v1/chat
 POST /v1/cases/analyze
+POST /v1/cases/brief
 POST /v1/similar-cases
 POST /v1/extractions/judgments
 ```
@@ -128,6 +129,22 @@ POST /v1/cases/analyze
 ```
 
 This route performs a deterministic first pass over the case text, detects likely legal domains, extracts dates and evidence categories, lists missing documents, retrieves related corpus material, and optionally asks the local Ollama model for a lawyer-ready intake note.
+
+## Case Research Brief
+
+```json
+{
+  "case_text": "Cheque was dishonoured on 12/04/2025. Legal notice was sent and bank return memo is available.",
+  "context_limit": 6,
+  "max_sources": 8
+}
+```
+
+```text
+POST /v1/cases/brief
+```
+
+This deterministic route builds a lawyer-ready research brief from the same case-analysis and retrieval pipeline. It returns issue tags, key dates, evidence mentioned, missing documents, research questions, next steps, a source digest and export-ready Markdown without requiring Ollama.
 
 ## Judgment Extraction Model
 

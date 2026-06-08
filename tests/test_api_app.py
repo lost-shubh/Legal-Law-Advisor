@@ -28,6 +28,7 @@ class ApiAppTest(unittest.TestCase):
         self.assertIn("Legal Law Advisor", response.text)
         self.assertIn("Case Analyzer", response.text)
         self.assertIn("/v1/cases/analyze", response.text)
+        self.assertIn("/v1/cases/brief", response.text)
 
     def test_fastapi_search_route_without_llm(self) -> None:
         from fastapi.testclient import TestClient
@@ -198,6 +199,30 @@ class ApiAppTest(unittest.TestCase):
         payload = response.json()
         self.assertEqual(payload["model_status"], "skipped")
         self.assertIn("CHEQUE_BOUNCE", payload["analysis"]["issue_tags"])
+
+    def test_case_brief_route_is_available(self) -> None:
+        from fastapi.testclient import TestClient
+
+        from legal_api.main import app
+
+        client = TestClient(app)
+        response = client.post(
+            "/v1/cases/brief",
+            json={
+                "case_text": (
+                    "Cheque was dishonoured on 12/04/2025. Legal notice was sent. "
+                    "The complainant has the bank return memo and WhatsApp messages."
+                ),
+                "context_limit": 2,
+                "max_sources": 4,
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertIn("Research Brief", payload["title"])
+        self.assertIn("CHEQUE_BOUNCE", payload["issue_tags"])
+        self.assertIn("markdown", payload)
+        self.assertIn("Research aid only", payload["disclaimer"])
 
     def test_similar_cases_route_is_available(self) -> None:
         from fastapi.testclient import TestClient

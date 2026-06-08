@@ -3,7 +3,7 @@
 Use this file before continuing project work. Do not repeatedly rediscover the same repo state.
 
 Tracked memory file: `AGENT_PROJECT_MEMORY.md`.
-Last checked from Codex on 2026-06-03.
+Last checked from Codex on 2026-06-04.
 
 ## Working Rule
 
@@ -153,6 +153,7 @@ Last checked from Codex on 2026-06-03.
   - `POST /v1/search`
   - `POST /v1/chat`
   - `POST /v1/cases/analyze`
+  - `POST /v1/cases/brief`
   - `POST /v1/similar-cases`
   - `POST /v1/extractions/judgments`
   - `POST /v1/gazette/notifications`
@@ -241,6 +242,7 @@ Last checked from Codex on 2026-06-03.
   - served directly by FastAPI at `GET /`
   - source file: `apps/api/src/legal_api/ui/index.html`
   - case analyzer screen calls `/v1/cases/analyze` and `/v1/similar-cases`
+  - brief screen calls `/v1/cases/brief` and can download the deterministic Markdown research brief
   - search screen calls `/v1/search` with lexical, semantic and hybrid modes
   - chat screen calls `/v1/chat/status` and `/v1/chat`
   - admin screen calls `/v1/admin/panels`
@@ -315,7 +317,7 @@ python -m compileall apps legal_db scripts tests
 python -m unittest discover -s tests -v
 ```
 
-Last known test count: 63 passing on 2026-06-03.
+Last known test count: 75 passing on 2026-06-04.
 
 ## Next Build Slice
 

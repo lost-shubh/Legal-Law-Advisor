@@ -182,6 +182,14 @@
       padding: 14px;
       min-height: 110px;
     }
+    .brief-list {
+      margin: 0;
+      padding-left: 18px;
+      color: var(--muted);
+      line-height: 1.45;
+      font-size: 0.9rem;
+    }
+    .brief-list li { margin: 4px 0; overflow-wrap: anywhere; }
     .empty {
       color: var(--muted);
       border: 1px dashed var(--line);
@@ -220,6 +228,7 @@
       </div>
       <nav class="tabs" aria-label="Workspace">
         <button class="tab active" data-view="case"><span>Case</span><span class="hint">analyze</span></button>
+        <button class="tab" data-view="brief"><span>Brief</span><span class="hint">draft</span></button>
         <button class="tab" data-view="search"><span>Search</span><span class="hint">corpus</span></button>
         <button class="tab" data-view="chat"><span>Chat</span><span class="hint">rag</span></button>
         <button class="tab" data-view="admin"><span>Admin</span><span class="hint">status</span></button>
@@ -274,6 +283,40 @@
             <div class="panel">
               <h3>Related Results</h3>
               <div id="caseResults" class="result-list"><div class="empty">No related results yet.</div></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="view" id="view-brief">
+        <div class="grid two">
+          <div class="panel">
+            <h3>Brief Input</h3>
+            <textarea id="briefText">A cheque was dishonoured by the bank on 12/04/2025. Legal notice was sent within limitation. The accused did not repay the amount. The complainant has the cheque, bank return memo, notice copy, delivery proof, and WhatsApp messages admitting liability.</textarea>
+            <div class="form-row">
+              <div>
+                <label for="briefContext">Context Limit</label>
+                <input id="briefContext" type="number" min="1" max="10" value="6">
+              </div>
+              <div>
+                <label for="briefSourcesLimit">Sources</label>
+                <input id="briefSourcesLimit" type="number" min="0" max="20" value="8">
+              </div>
+              <div>
+                <label>Export</label>
+                <button id="briefDownloadBtn" type="button">Download Markdown</button>
+              </div>
+            </div>
+            <button class="primary" id="briefBtn" type="button">Generate Brief</button>
+          </div>
+          <div class="grid">
+            <div class="panel">
+              <h3>Research Brief</h3>
+              <div id="briefOutput" class="empty">No brief yet.</div>
+            </div>
+            <div class="panel">
+              <h3>Source Digest</h3>
+              <div id="briefSources" class="result-list"><div class="empty">No sources yet.</div></div>
             </div>
           </div>
         </div>
@@ -396,9 +439,10 @@
   </div>
 
   <script>
-    const state = { sourceFilter: null };
+    const state = { sourceFilter: null, briefMarkdown: "" };
     const titles = {
       case: "Case Analyzer",
+      brief: "Research Brief",
       search: "Corpus Search",
       chat: "Local Chat",
       admin: "Admin Dashboard",
@@ -436,6 +480,19 @@
     function tags(values) {
       if (!values || !values.length) return "";
       return values.map((value) => `<span class="tag">${escapeHtml(value)}</span>`).join(" ");
+    }
+
+    function bulletList(values, fallback) {
+      const rows = values && values.length ? values : [fallback];
+      return `<ul class="brief-list">${rows.map((value) => `<li>${escapeHtml(value)}</li>`).join("")}</ul>`;
+    }
+
+    function evidenceList(evidence) {
+      const entries = Object.entries(evidence || {});
+      if (!entries.length) return bulletList([], "No evidence categories detected.");
+      return `<ul class="brief-list">${entries.map(([category, matches]) => `
+        <li><strong>${escapeHtml(category.replaceAll("_", " "))}</strong>: ${escapeHtml((matches || []).join(", "))}</li>
+      `).join("")}</ul>`;
     }
 
     function renderResults(target, results) {
@@ -481,6 +538,44 @@
       renderResults($("caseResults"), payload.retrieved_results || []);
     }
 
+    function renderBrief(payload) {
+      state.briefMarkdown = payload.markdown || "";
+      $("briefOutput").innerHTML = `
+        <div class="result">
+          <h4>${escapeHtml(payload.title || "Research Brief")}</h4>
+          <p>${escapeHtml(payload.summary || "")}</p>
+          <div class="meta">
+            ${tags(payload.issue_tags || [])}
+            <span class="tag">confidence ${Number(payload.confidence || 0).toFixed(3)}</span>
+          </div>
+        </div>
+        <div class="result">
+          <h4>Research Questions</h4>
+          ${bulletList(payload.research_questions || [], "No research questions generated.")}
+        </div>
+        <div class="result">
+          <h4>Next Steps</h4>
+          ${bulletList(payload.next_steps || [], "No next steps generated.")}
+        </div>
+        <div class="result">
+          <h4>Evidence Mentioned</h4>
+          ${evidenceList(payload.evidence_found || {})}
+        </div>
+        <div class="result">
+          <h4>Missing Documents</h4>
+          ${bulletList(payload.missing_documents || [], "No missing documents detected from the current facts.")}
+        </div>
+        ${payload.urgency_warnings?.length ? `
+          <div class="result">
+            <h4>Urgency Warnings</h4>
+            ${bulletList(payload.urgency_warnings, "")}
+          </div>
+        ` : ""}
+        <div class="footer-line">${escapeHtml(payload.disclaimer || "")}</div>
+      `;
+      renderResults($("briefSources"), payload.source_digest || []);
+    }
+
     async function analyzeCase() {
       const btn = $("analyzeBtn");
       setBusy(btn, true);
@@ -520,6 +615,43 @@
       } finally {
         setBusy(btn, false);
       }
+    }
+
+    async function generateBrief() {
+      const btn = $("briefBtn");
+      setBusy(btn, true);
+      state.briefMarkdown = "";
+      $("briefOutput").innerHTML = `<div class="empty">Generating...</div>`;
+      $("briefSources").innerHTML = `<div class="empty">Searching...</div>`;
+      try {
+        const payload = await api("/v1/cases/brief", {
+          method: "POST",
+          body: JSON.stringify({
+            case_text: $("briefText").value,
+            context_limit: Number($("briefContext").value || 6),
+            max_sources: Number($("briefSourcesLimit").value || 8)
+          })
+        });
+        renderBrief(payload);
+      } catch (error) {
+        renderError($("briefOutput"), error);
+        $("briefSources").innerHTML = `<div class="empty">No sources.</div>`;
+      } finally {
+        setBusy(btn, false);
+      }
+    }
+
+    function downloadBrief() {
+      if (!state.briefMarkdown) return;
+      const blob = new Blob([state.briefMarkdown], { type: "text/markdown;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "case-research-brief.md";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
     }
 
     async function runSearch(filter = null) {
@@ -696,6 +828,8 @@
     $("refreshBtn").addEventListener("click", () => { refreshShell(); refreshAdmin(); });
     $("analyzeBtn").addEventListener("click", analyzeCase);
     $("similarBtn").addEventListener("click", similarCases);
+    $("briefBtn").addEventListener("click", generateBrief);
+    $("briefDownloadBtn").addEventListener("click", downloadBrief);
     $("searchBtn").addEventListener("click", () => runSearch(state.sourceFilter));
     $("searchSectionsBtn").addEventListener("click", () => runSearch(["SECTION"]));
     $("searchJudgmentsBtn").addEventListener("click", () => runSearch(["JUDGMENT"]));

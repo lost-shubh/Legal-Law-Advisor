@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from legal_db.case_intake.analyzer import CaseAnalysis, analyze_case_text, build_case_llm_prompt
+from legal_db.case_intake.brief import CaseResearchBrief, build_case_research_brief
 from legal_db.case_intake.legal_anchors import anchor_query_terms, anchor_results_for_analysis
 from legal_db.llm.ollama import OllamaChatClient, OllamaSettings
 from legal_db.retrieval.service import LegalRetrievalService
@@ -110,3 +111,20 @@ class CaseIntakePipeline:
                 model_status="error",
                 error=str(exc),
             )
+
+    def build_brief(
+        self,
+        case_text: str,
+        context_limit: int = 6,
+        max_sources: int = 8,
+    ) -> CaseResearchBrief:
+        response = self.analyze(
+            case_text=case_text,
+            context_limit=context_limit,
+            use_llm=False,
+        )
+        return build_case_research_brief(
+            response.analysis,
+            response.retrieved_results,
+            max_sources=max_sources,
+        )

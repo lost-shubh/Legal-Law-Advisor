@@ -21,6 +21,7 @@ GET  /health/deep
 POST /v1/chat
 POST /v1/search
 POST /v1/cases/analyze
+POST /v1/cases/brief
 POST /v1/similar-cases
 GET  /v1/corpus/progress
 GET  /v1/ingestion/status

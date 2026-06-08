@@ -29,6 +29,8 @@ from .schemas import (
     AdminOverviewResponse,
     CaseAnalyzeRequest,
     CaseAnalyzeResponse,
+    CaseBriefRequest,
+    CaseBriefResponse,
     ChatRequest,
     ChatResponse,
     ChatStatusResponse,
@@ -237,6 +239,15 @@ try:
             model_status=response.model_status,
             error=response.error,
         )
+
+    @app.post("/v1/cases/brief", response_model=CaseBriefResponse)
+    def case_brief_route(request: CaseBriefRequest) -> CaseBriefResponse:
+        brief = CaseIntakePipeline(retrieval_service=retrieval_service).build_brief(
+            request.case_text,
+            context_limit=request.context_limit,
+            max_sources=request.max_sources,
+        )
+        return CaseBriefResponse(**brief.to_dict())
 
     @app.post("/v1/similar-cases", response_model=SimilarCasesResponse)
     def similar_cases_route(request: SimilarCasesRequest) -> SimilarCasesResponse:

@@ -21,7 +21,7 @@ Private user files must remain separated from public training data unless explic
 
 ## Current MVP Path
 
-The API route `POST /v1/cases/analyze` implements the first version:
+The API routes `POST /v1/cases/analyze` and `POST /v1/cases/brief` implement the first version:
 
 ```text
 case text
@@ -29,6 +29,7 @@ case text
 -> missing document checklist
 -> related corpus retrieval
 -> optional Ollama intake note
+-> deterministic research brief and Markdown export
 ```
 
 Set `use_llm=false` for deterministic retrieval-only testing. Set `use_llm=true` to use the configured local Ollama model.

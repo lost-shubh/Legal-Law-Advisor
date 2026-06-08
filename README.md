@@ -19,7 +19,7 @@ Completed so far:
 - Local SQLite staging corpus and ingestion workflow for development before PostgreSQL/WSL is fully available.
 - Priority statute and section ingestion scaffold, with current staging data including `16` statutes and `5,421` sections.
 - Legal books/materials ingestion with chapters and chunks, currently `3` materials, `26` chapters and `332` chunks in staging.
-- FastAPI vertical slice with search, chat, admin overview, corpus progress, ingestion status, Ollama/extraction model status, case analysis and similar-cases routes.
+- FastAPI vertical slice with search, chat, admin overview, corpus progress, ingestion status, Ollama/extraction model status, case analysis, research brief and similar-cases routes.
 - Retrieval MVP over statutes, books and judgment text, with lexical, semantic and hybrid search modes.
 - Local deterministic judgment extraction model with staging extraction storage and API status/run routes.
 - Local Ollama integration with configured `llama3.2:3b` default and `llama3.2:1b` fallback.
@@ -278,6 +278,7 @@ GET  /v1/extractions/status
 POST /v1/search
 POST /v1/chat
 POST /v1/cases/analyze
+POST /v1/cases/brief
 POST /v1/similar-cases
 POST /v1/extractions/judgments
 POST /v1/gazette/notifications
