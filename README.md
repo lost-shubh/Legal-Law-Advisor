@@ -194,6 +194,14 @@ python .\scripts\ingest_local_documents.py .\data\raw\bns_public --manifest .\da
 python .\scripts\build_pg_embeddings.py --source-type BOOK_CHUNK --replace
 ```
 
+Download and ingest the broader official/public new-criminal-laws corpus for BNS, BNSS, BSA and related Gazette/Sankalan materials:
+
+```powershell
+python .\scripts\download_new_criminal_laws_public_documents.py --output-dir .\data\raw\new_criminal_laws_public
+python .\scripts\ingest_local_documents.py .\data\raw\new_criminal_laws_public --manifest .\data\raw\new_criminal_laws_public\manifest.json --source-code NEW_CRIMINAL_LAWS_PUBLIC --source-name "Official Public New Criminal Laws Documents" --official-source --source-notes "Official/public BNS, BNSS, BSA, Gazette and NCRB Sankalan documents downloaded from MHA and NCRB for local legal research." --rights-note "Official/public document indexed for local legal research. Verify current law against the source URL."
+python .\scripts\build_pg_embeddings.py --source-type BOOK_CHUNK --replace
+```
+
 Import a locally downloaded India Code Central Acts corpus into PostgreSQL statutes/sections:
 
 ```powershell

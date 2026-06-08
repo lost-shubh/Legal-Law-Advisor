@@ -126,6 +126,13 @@ Last checked from Codex on 2026-06-04.
   - downloads a curated official-source set from MHA and NCRB, not private commentary or paywalled Manupatra material
   - use `scripts/ingest_local_documents.py --manifest ... --source-code BNS_PUBLIC --official-source` to ingest
 
+- Official/public new-criminal-laws document downloader:
+  - `legal_db.ingest.new_criminal_laws_public_documents`
+  - `scripts/download_new_criminal_laws_public_documents.py`
+  - dry-run currently plans 21 MHA/NCRB documents across BNS, BNSS, BSA, NCRB Sankalan tables/schedules and Gazette PDFs
+  - intended import source code: `NEW_CRIMINAL_LAWS_PUBLIC`
+  - raw downloaded files stay ignored under `data/raw/new_criminal_laws_public`; do not commit PDFs/HTML exports
+
 - India Code Central Acts ingestion:
   - `legal_db.ingest.central_acts`
   - `scripts/ingest_india_code_central_acts.py`
