@@ -298,13 +298,23 @@ Last checked from Codex on 2026-06-08.
     bot user-agent, so use the browser-compatible agent shown in `docs/JUDGMENT_INGESTION.md`
   - generated local manifests under `data/manifests/*.local.json` are ignored by git
 
-- AWS Open Data Supreme Court corpus ingestion:
+  - AWS Open Data Supreme Court corpus ingestion:
   - `legal_db.ingest.aws_sc_open_data`
   - `scripts/generate_aws_sc_manifest.py`
   - source code: `SC_AWS_OPEN_DATA`
   - generates standard judgment manifests from the public AWS Open Data Indian Supreme Court Judgments yearly indexes and metadata JSON
   - use `scripts/ingest_judgments.py --delay-seconds 0` for AWS batches, then `scripts/migrate_staging_to_postgres.py --only judgments`
+  - `scripts/extract_pg_judgment_text.py` backfills PostgreSQL `raw_text`/`clean_text` from already downloaded local PDFs without re-downloading
   - 5-row smoke batch for 2025 completed successfully: PostgreSQL reached 30 judgments and stayed at 38,094 sections after duplicate cleanup
+  - 970-row + 10-row top-off run completed from AWS Open Data in the live `F:\indian-legal-database` checkout:
+    - PostgreSQL reached 1,003 judgments and 1,003 cases
+    - source document coverage: 978 `SC_AWS_OPEN_DATA`, 26 `SCI`
+    - 216 judgments currently have extracted/searchable text, 787 raw-downloaded judgments remain pending text backfill
+    - `JUDGMENT_CHUNK` embeddings rebuilt: 4,893 judgment chunk embeddings
+    - local production extraction completed for 216 text-backed judgments and produced 216 outcomes
+    - citation graph rebuilt over 216 text-backed judgments: 1,810 citation strings/edges, 198 resolved locally
+    - `scripts/corpus_progress.py --database-url ...` reports 1,003 / 10,000 judgments = 10.03%
+    - quality checks now have expected WARN failures for 787 judgments without text/outcome; ERROR checks remain clean
   - do not use normal `migrate_staging_to_postgres.py` without `--only judgments` for judgment batches; full migration can reprocess old staging statute rows
 
 - PDF text extraction:

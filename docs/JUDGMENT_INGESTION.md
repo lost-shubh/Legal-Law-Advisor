@@ -150,10 +150,13 @@ python .\scripts\migrate_staging_to_postgres.py --only judgments
 After migration, rebuild judgment embeddings, extraction output and citations:
 
 ```powershell
+python .\scripts\extract_pg_judgment_text.py --limit 100
 python .\scripts\build_pg_embeddings.py --source-type JUDGMENT_CHUNK --replace
 python .\scripts\extract_pg_judgments.py
 python .\scripts\build_pg_citations.py
 ```
+
+Use `scripts/extract_pg_judgment_text.py --limit N` to backfill text for raw downloaded PDFs in batches. This avoids re-downloading PDFs and updates PostgreSQL `judgments.raw_text`, `judgments.clean_text`, `page_count`, `word_count`, `ocr_quality` and `source_documents.parse_status`.
 
 Use `--offset` and `--limit` to continue in batches without regenerating already-ingested rows.
 
