@@ -298,6 +298,15 @@ Last checked from Codex on 2026-06-08.
     bot user-agent, so use the browser-compatible agent shown in `docs/JUDGMENT_INGESTION.md`
   - generated local manifests under `data/manifests/*.local.json` are ignored by git
 
+- AWS Open Data Supreme Court corpus ingestion:
+  - `legal_db.ingest.aws_sc_open_data`
+  - `scripts/generate_aws_sc_manifest.py`
+  - source code: `SC_AWS_OPEN_DATA`
+  - generates standard judgment manifests from the public AWS Open Data Indian Supreme Court Judgments yearly indexes and metadata JSON
+  - use `scripts/ingest_judgments.py --delay-seconds 0` for AWS batches, then `scripts/migrate_staging_to_postgres.py --only judgments`
+  - 5-row smoke batch for 2025 completed successfully: PostgreSQL reached 30 judgments and stayed at 38,094 sections after duplicate cleanup
+  - do not use normal `migrate_staging_to_postgres.py` without `--only judgments` for judgment batches; full migration can reprocess old staging statute rows
+
 - PDF text extraction:
   - `legal_db/pdf/ocr.py` now falls back to PyMuPDF when `pdfplumber` is not installed
   - `estimate_text_quality()` produces an `ocr_quality` score for extracted text

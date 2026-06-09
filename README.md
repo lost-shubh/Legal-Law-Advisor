@@ -226,6 +226,17 @@ python .\scripts\ingest_judgments.py .\data\judgment_manifest.local.json --limit
 python .\scripts\ingest_judgments.py --status
 ```
 
+Generate and ingest a larger Supreme Court batch from AWS Open Data:
+
+```powershell
+python .\scripts\generate_aws_sc_manifest.py --years 2025 2024 --offset 5 --limit 970 --output .\data\manifests\sc_aws_open_data_970.local.json
+python .\scripts\ingest_judgments.py .\data\manifests\sc_aws_open_data_970.local.json --delay-seconds 0 --user-agent "LegalLawAdvisorResearch/0.1 AWSOpenData"
+python .\scripts\migrate_staging_to_postgres.py --only judgments
+python .\scripts\build_pg_embeddings.py --source-type JUDGMENT_CHUNK --replace
+python .\scripts\extract_pg_judgments.py
+python .\scripts\build_pg_citations.py
+```
+
 Generate a manifest from saved DOJ/High Court result HTML:
 
 ```powershell

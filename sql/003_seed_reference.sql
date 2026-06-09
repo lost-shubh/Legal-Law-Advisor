@@ -4,6 +4,7 @@ VALUES
   ('EGAZETTE', 'e-Gazette of India', 'GAZETTE', 'https://egazette.gov.in/', 'INDIA', 'Official notifications, rules, commencement and amendments.'),
   ('SCI', 'Supreme Court of India', 'JUDGMENT', 'https://www.sci.gov.in/', 'INDIA', 'Official Supreme Court website.'),
   ('ESCR', 'e-SCR Supreme Court Reports', 'JUDGMENT', 'https://scr.sci.gov.in/scrsearch/', 'INDIA', 'Official electronic Supreme Court Reports search.'),
+  ('SC_AWS_OPEN_DATA', 'AWS Open Data Indian Supreme Court Judgments', 'JUDGMENT', 'https://registry.opendata.aws/indian-supreme-court-judgments/', 'INDIA', 'CC-BY-4.0 public corpus of Supreme Court judgments downloaded from eCourts/Supreme Court sources.'),
   ('DOJ_JUDGMENTS', 'Department of Justice Judgment Search Portal', 'JUDGMENT', 'https://doj.gov.in/judgment-search-portal/', 'INDIA', 'High Court judgments and final orders search entry point.'),
   ('HC_DELHI', 'High Court of Delhi Official Website', 'JUDGMENT', 'https://delhihighcourt.nic.in/', 'INDIA', 'Official Delhi High Court judgments and orders.'),
   ('HC_BOMBAY', 'High Court of Bombay Official Website', 'JUDGMENT', 'https://bombayhighcourt.nic.in/', 'INDIA', 'Official Bombay High Court judgments and orders.'),

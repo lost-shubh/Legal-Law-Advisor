@@ -5,6 +5,7 @@ from pathlib import Path
 
 from scripts.migrate_staging_to_postgres import (
     map_text_extraction_method,
+    normalize_migration_scope,
     parse_subject_tags,
     row_value,
     sanitize_pg_params,
@@ -69,6 +70,12 @@ class MigrationHelperTest(unittest.TestCase):
         self.assertEqual(parse_subject_tags('["criminal", "procedure"]'), ["criminal", "procedure"])
         self.assertEqual(parse_subject_tags("legal aid"), ["legal aid"])
         self.assertIsNone(parse_subject_tags(None))
+
+    def test_normalize_migration_scope_validates_known_scopes(self) -> None:
+        self.assertEqual(normalize_migration_scope(None), "all")
+        self.assertEqual(normalize_migration_scope("JUDGMENTS"), "judgments")
+        with self.assertRaises(ValueError):
+            normalize_migration_scope("everything")
 
 
 if __name__ == "__main__":

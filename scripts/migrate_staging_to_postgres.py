@@ -26,12 +26,22 @@ except ModuleNotFoundError:
     make_engine = None
 
 
+MIGRATION_SCOPES = {"all", "judgments", "statutes", "books"}
+
+
 def require_postgres_dependencies() -> tuple[Callable[..., Any], Callable[[str | None], Any]]:
     if sql_text is None or make_engine is None:
         raise RuntimeError(
             "PostgreSQL migration dependencies are missing. Install project dependencies first."
         )
     return sql_text, make_engine
+
+
+def normalize_migration_scope(scope: str | None) -> str:
+    normalized = (scope or "all").strip().lower()
+    if normalized not in MIGRATION_SCOPES:
+        raise ValueError(f"Unsupported migration scope '{scope}'. Expected one of {sorted(MIGRATION_SCOPES)}.")
+    return normalized
 
 
 @dataclass(frozen=True)
@@ -616,7 +626,18 @@ def migrate_legal_book_rows(
     return migrated
 
 
-def migrate(db_path: str | Path, database_url: str | None, dry_run: bool) -> MigrationSummary:
+def migrate(
+    db_path: str | Path,
+    database_url: str | None,
+    dry_run: bool,
+    *,
+    only: str = "all",
+) -> MigrationSummary:
+    try:
+        scope = normalize_migration_scope(only)
+    except ValueError as exc:
+        return MigrationSummary(False, False, dry_run, {}, {}, [str(exc)])
+
     path = Path(db_path)
     counts = staging_counts(path)
     errors: list[str] = []
@@ -643,9 +664,12 @@ def migrate(db_path: str | Path, database_url: str | None, dry_run: bool) -> Mig
         with engine.begin() as pg_conn:
             source_map, source_count = migrate_source_documents(sqlite_conn, pg_conn)
             migrated = {"source_documents": source_count}
-            migrated.update(migrate_statute_rows(sqlite_conn, pg_conn, source_map))
-            migrated.update(migrate_judgment_rows(sqlite_conn, pg_conn, source_map))
-            migrated.update(migrate_legal_book_rows(sqlite_conn, pg_conn, source_map))
+            if scope in {"all", "statutes"}:
+                migrated.update(migrate_statute_rows(sqlite_conn, pg_conn, source_map))
+            if scope in {"all", "judgments"}:
+                migrated.update(migrate_judgment_rows(sqlite_conn, pg_conn, source_map))
+            if scope in {"all", "books"}:
+                migrated.update(migrate_legal_book_rows(sqlite_conn, pg_conn, source_map))
         return MigrationSummary(True, True, False, counts, migrated, errors)
     except Exception as exc:
         errors.append(str(exc))
@@ -661,9 +685,15 @@ def main() -> int:
     parser.add_argument("--db-path", default=str(DEFAULT_DB_PATH))
     parser.add_argument("--database-url", help="Override DATABASE_URL.")
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument(
+        "--only",
+        choices=sorted(MIGRATION_SCOPES),
+        default="all",
+        help="Restrict migration to one data family. Judgment migration still upserts source_documents.",
+    )
     args = parser.parse_args()
 
-    summary = migrate(args.db_path, args.database_url, args.dry_run)
+    summary = migrate(args.db_path, args.database_url, args.dry_run, only=args.only)
     print(json.dumps(summary.to_dict(), indent=2))
     return 1 if summary.errors and not args.dry_run else 0
 

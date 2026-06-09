@@ -22,6 +22,7 @@ def main() -> int:
     parser.add_argument("--no-download", action="store_true", help="Skip remote downloads.")
     parser.add_argument("--no-extract-text", action="store_true", help="Store PDFs only.")
     parser.add_argument("--user-agent", help="Override User-Agent for portals that block bots.")
+    parser.add_argument("--delay-seconds", type=int, help="Override delay between remote PDF requests.")
     parser.add_argument(
         "--init-template",
         help="Copy config/judgment_manifest.example.json to this path and exit.",
@@ -42,7 +43,11 @@ def main() -> int:
     if not args.manifest:
         parser.error("manifest is required unless --status or --init-template is used")
 
-    fetcher = PoliteFetcher(user_agent=args.user_agent) if args.user_agent else None
+    fetcher = (
+        PoliteFetcher(user_agent=args.user_agent, delay_seconds=args.delay_seconds)
+        if args.user_agent or args.delay_seconds is not None
+        else None
+    )
     pipeline = JudgmentManifestIngestionPipeline(db_path=db_path, fetcher=fetcher)
     summary = pipeline.ingest_manifest(
         args.manifest,

@@ -119,6 +119,44 @@ python .\scripts\ingest_judgments.py .\data\manifests\sc_latest_judgments.local.
 
 Generated `*.local.json` manifests under `data/manifests/` are local runtime data and are ignored by git.
 
+## AWS Open Data Supreme Court Corpus
+
+The AWS Open Data Registry hosts a public `Indian Supreme Court Judgments` dataset covering Supreme Court judgments from 1950 through 2025. It provides yearly indexes, per-judgment metadata JSON and English PDF files. The project uses this as the scalable Supreme Court corpus path while preserving the same manifest ingestion workflow.
+
+Generate a bounded batch:
+
+```powershell
+python .\scripts\generate_aws_sc_manifest.py `
+  --years 2025 2024 `
+  --offset 5 `
+  --limit 970 `
+  --output .\data\manifests\sc_aws_open_data_970.local.json
+```
+
+Ingest and extract PDF text. AWS Open Data can use a lower request delay than court portals:
+
+```powershell
+python .\scripts\ingest_judgments.py .\data\manifests\sc_aws_open_data_970.local.json `
+  --delay-seconds 0 `
+  --user-agent "LegalLawAdvisorResearch/0.1 AWSOpenData"
+```
+
+Migrate only judgment rows into PostgreSQL. Do not rerun statute/section migration during judgment batches:
+
+```powershell
+python .\scripts\migrate_staging_to_postgres.py --only judgments
+```
+
+After migration, rebuild judgment embeddings, extraction output and citations:
+
+```powershell
+python .\scripts\build_pg_embeddings.py --source-type JUDGMENT_CHUNK --replace
+python .\scripts\extract_pg_judgments.py
+python .\scripts\build_pg_citations.py
+```
+
+Use `--offset` and `--limit` to continue in batches without regenerating already-ingested rows.
+
 Generate from saved HTML:
 
 ```powershell
