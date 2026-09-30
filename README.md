@@ -2,6 +2,38 @@
 
 Production-oriented starter project for building an Indian legal intelligence database.
 
+[![CI](https://github.com/lost-shubh/Legal-Law-Advisor/actions/workflows/ci.yml/badge.svg)](https://github.com/lost-shubh/Legal-Law-Advisor/actions/workflows/ci.yml)
+
+## Why this project is different
+
+Legal Law Advisor is built as **evidence-first legal intelligence infrastructure**, not an
+unverified legal chatbot. It preserves official-source provenance, processes difficult PDF
+and OCR material, combines lexical and semantic retrieval, maps case-law citations, and
+exposes a verified-research response with explicit evidence and abstention states.
+
+The central product promise is simple: **the model may generate language, but the evidence
+layer controls what can be claimed.**
+
+### Demonstration workflow
+
+```text
+Official legal source → ingestion and hashing → OCR/text quality gates
+→ legal extraction → embeddings and citation graph → hybrid retrieval
+→ claim/evidence verification → grounded research response
+```
+
+Start the API and try the evidence-first endpoint:
+
+```powershell
+$body = @{ question = "What does Section 138 require?"; context_limit = 5; use_llm = $false } |
+  ConvertTo-Json
+Invoke-RestMethod http://127.0.0.1:8000/v1/verified-research -Method Post -Body $body -ContentType "application/json"
+```
+
+The response includes the retrieved authorities, evidence IDs, matched terms, confidence,
+source locators and an explicit abstention state when the corpus cannot support an answer.
+See [SHOWCASE.md](docs/SHOWCASE.md) for the architecture, demo checklist and roadmap.
+
 The project is organized around three principles:
 
 1. Use official sources as primary data: India Code, e-Gazette, Supreme Court/e-SCR, DOJ judgment search, High Courts, and eCourts.
@@ -56,7 +88,7 @@ Document texts:    44
 Embedding chunks:  6,945 production pgvector rows plus 649 local staging chunks
 Extractions:       25 production outcomes/facts plus 25 local staging judgment extractions
 Citation edges:    348
-Test suite:        57 passing tests
+Test suite:        88 passing tests
 ```
 
 Main work still left:
