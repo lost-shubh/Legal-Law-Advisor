@@ -14,6 +14,9 @@ class VerifiedClaim:
     support: str
     overlap_score: float
     evidence_ids: list[str]
+    matched_terms: list[str]
+    evidence_excerpts: list[str]
+    confidence: float
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -21,6 +24,9 @@ class VerifiedClaim:
             "support": self.support,
             "overlap_score": self.overlap_score,
             "evidence_ids": self.evidence_ids,
+            "matched_terms": self.matched_terms,
+            "evidence_excerpts": self.evidence_excerpts,
+            "confidence": self.confidence,
         }
 
 
@@ -43,20 +49,30 @@ def _evidence_payload(results: list[SearchResult]) -> list[dict[str, Any]]:
 
 def _verify_claim(sentence: str, results: list[SearchResult]) -> VerifiedClaim:
     claim_terms = tokenize(sentence)
-    candidates: list[tuple[float, str]] = []
+    candidates: list[tuple[float, str, list[str], str]] = []
     for index, result in enumerate(results):
         evidence_terms = tokenize(result.snippet)
-        overlap = len(claim_terms & evidence_terms) / max(len(claim_terms), 1)
+        matched = sorted(claim_terms & evidence_terms)
+        overlap = len(matched) / max(len(claim_terms), 1)
         if overlap > 0:
-            candidates.append((overlap, _evidence_id(result, index)))
+            candidates.append((overlap, _evidence_id(result, index), matched, result.snippet))
     candidates.sort(reverse=True)
     best_score = candidates[0][0] if candidates else 0.0
-    support = "supported" if best_score >= 0.25 else "unverified"
+    if best_score >= 0.5:
+        support = "supported"
+    elif best_score >= 0.25:
+        support = "partially_supported"
+    else:
+        support = "unverified"
+    accepted = [item for item in candidates[:2] if item[0] >= 0.25]
     return VerifiedClaim(
         text=sentence,
         support=support,
         overlap_score=round(best_score, 3),
-        evidence_ids=[item[1] for item in candidates[:2] if item[0] >= 0.25],
+        evidence_ids=[item[1] for item in accepted],
+        matched_terms=accepted[0][2] if accepted else [],
+        evidence_excerpts=[item[3] for item in accepted],
+        confidence=round(min(best_score, 1.0), 3),
     )
 
 
@@ -98,9 +114,9 @@ def build_verified_research(
     elif not claims or not supported_text:
         status = "abstained_unverified"
         reason = "The generated response did not contain claims with sufficient evidence overlap."
-    elif any(claim.support == "unverified" for claim in claims):
+    elif any(claim.support != "supported" for claim in claims):
         status = "partially_verified"
-        reason = "Unsupported sentences were withheld from the verified answer."
+        reason = "Partially supported or unsupported sentences were withheld from the verified answer."
     else:
         status = "verified_with_evidence"
         reason = None

@@ -37,6 +37,9 @@ class VerifiedResearchTest(unittest.TestCase):
         )
         self.assertEqual(result["verification_status"], "verified_with_evidence")
         self.assertEqual(result["claims"][0]["support"], "supported")
+        self.assertIn("notice", result["claims"][0]["matched_terms"])
+        self.assertTrue(result["claims"][0]["evidence_excerpts"])
+        self.assertGreater(result["claims"][0]["confidence"], 0.5)
         self.assertTrue(result["verified_answer"])
 
     def test_no_evidence_abstains(self) -> None:
