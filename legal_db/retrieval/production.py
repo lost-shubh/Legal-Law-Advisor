@@ -155,7 +155,7 @@ class ProductionRetrievalService:
         if normalized_mode == "hybrid":
             semantic = self.semantic_search(query, limit=bounded_limit * 2, source_types=source_types)
             lexical = self.lexical_search(query, limit=bounded_limit * 2, source_types=source_types)
-            return self._merge_ranked_results(semantic + lexical, bounded_limit)
+            return self._merge_ranked_results([semantic, lexical], bounded_limit)
         return self.lexical_search(query, limit=bounded_limit, source_types=source_types)
 
     def retrieve_context(self, query: str, limit: int = 5) -> tuple[str, list[SearchResult]]:
@@ -268,14 +268,34 @@ class ProductionRetrievalService:
             for row in rows
         ]
 
-    def _merge_ranked_results(self, results: list[SearchResult], limit: int) -> list[SearchResult]:
-        merged: dict[tuple[str, str | None], SearchResult] = {}
-        for result in results:
-            key = (result.title, result.source_url)
-            current = merged.get(key)
-            if current is None or result.score > current.score:
-                merged[key] = result
-        ranked = list(merged.values())
+    def _merge_ranked_results(
+        self, result_groups: list[list[SearchResult]], limit: int
+    ) -> list[SearchResult]:
+        """Fuse lexical and semantic lists without comparing incompatible score scales."""
+        merged: dict[tuple[str, str | None], dict[str, Any]] = {}
+        for group in result_groups:
+            for rank, result in enumerate(group, start=1):
+                key = (result.title, result.source_url)
+                entry = merged.setdefault(key, {"result": result, "rrf": 0.0, "modes": set()})
+                entry["rrf"] += 1.0 / (60.0 + rank)
+                entry["modes"].add(result.source_type)
+                if result.score > entry["result"].score:
+                    entry["result"] = result
+        ranked: list[SearchResult] = []
+        for entry in merged.values():
+            result = entry["result"]
+            metadata = dict(result.metadata or {})
+            metadata.update({"fusion_score": round(entry["rrf"], 6), "retrieval_modes": sorted(entry["modes"])})
+            ranked.append(
+                SearchResult(
+                    source_type=result.source_type,
+                    title=result.title,
+                    snippet=result.snippet,
+                    score=round(entry["rrf"], 6),
+                    source_url=result.source_url,
+                    metadata=metadata,
+                )
+            )
         ranked.sort(key=lambda item: item.score, reverse=True)
         return ranked[:limit]
 

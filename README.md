@@ -21,6 +21,7 @@ Completed so far:
 - Legal books/materials ingestion with chapters and chunks, currently `3` materials, `26` chapters and `332` chunks in staging.
 - FastAPI vertical slice with search, chat, admin overview, corpus progress, ingestion status, Ollama/extraction model status, case analysis, research brief and similar-cases routes.
 - Retrieval MVP over statutes, books and judgment text, with lexical, semantic and hybrid search modes.
+- Hybrid retrieval now uses reciprocal-rank fusion so lexical and semantic scores are combined by rank rather than incomparable raw score scales.
 - Local deterministic judgment extraction model with staging extraction storage and API status/run routes.
 - Local Ollama integration with configured `llama3.2:3b` default and `llama3.2:1b` fallback.
 - No `llama3.1:8b` upgrade is planned on this machine because of local RAM/storage limits.
