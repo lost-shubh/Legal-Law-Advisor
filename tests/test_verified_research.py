@@ -39,6 +39,8 @@ class VerifiedResearchTest(unittest.TestCase):
         self.assertEqual(result["claims"][0]["support"], "supported")
         self.assertIn("notice", result["claims"][0]["matched_terms"])
         self.assertTrue(result["claims"][0]["evidence_excerpts"])
+        self.assertEqual(result["claims"][0]["evidence_locations"][0]["type"], "retrieved_excerpt")
+        self.assertIn("locator", result["evidence"][0])
         self.assertGreater(result["claims"][0]["confidence"], 0.5)
         self.assertTrue(result["verified_answer"])
 

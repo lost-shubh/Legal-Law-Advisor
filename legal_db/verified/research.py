@@ -16,6 +16,7 @@ class VerifiedClaim:
     evidence_ids: list[str]
     matched_terms: list[str]
     evidence_excerpts: list[str]
+    evidence_locations: list[dict[str, Any]]
     confidence: float
 
     def to_dict(self) -> dict[str, Any]:
@@ -26,6 +27,7 @@ class VerifiedClaim:
             "evidence_ids": self.evidence_ids,
             "matched_terms": self.matched_terms,
             "evidence_excerpts": self.evidence_excerpts,
+            "evidence_locations": self.evidence_locations,
             "confidence": self.confidence,
         }
 
@@ -43,19 +45,36 @@ def _evidence_payload(results: list[SearchResult]) -> list[dict[str, Any]]:
     for index, result in enumerate(results):
         item = result.to_dict()
         item["evidence_id"] = _evidence_id(result, index)
+        item["locator"] = _source_locator(result)
         payload.append(item)
     return payload
 
 
+def _source_locator(result: SearchResult) -> dict[str, Any]:
+    """Describe the exact retrieved excerpt without pretending it is a page span."""
+    snippet = result.snippet or ""
+    return {
+        "type": "retrieved_excerpt",
+        "character_start": 0,
+        "character_end": len(snippet),
+        "page": (result.metadata or {}).get("page"),
+        "paragraph": (result.metadata or {}).get("paragraph"),
+        "chunk_index": (result.metadata or {}).get("chunk_index"),
+        "note": "Page/paragraph is returned when source ingestion provides it; otherwise this is the retrieved excerpt.",
+    }
+
+
 def _verify_claim(sentence: str, results: list[SearchResult]) -> VerifiedClaim:
     claim_terms = tokenize(sentence)
-    candidates: list[tuple[float, str, list[str], str]] = []
+    candidates: list[tuple[float, str, list[str], str, dict[str, Any]]] = []
     for index, result in enumerate(results):
         evidence_terms = tokenize(result.snippet)
         matched = sorted(claim_terms & evidence_terms)
         overlap = len(matched) / max(len(claim_terms), 1)
         if overlap > 0:
-            candidates.append((overlap, _evidence_id(result, index), matched, result.snippet))
+            candidates.append(
+                (overlap, _evidence_id(result, index), matched, result.snippet, _source_locator(result))
+            )
     candidates.sort(reverse=True)
     best_score = candidates[0][0] if candidates else 0.0
     if best_score >= 0.5:
@@ -72,6 +91,7 @@ def _verify_claim(sentence: str, results: list[SearchResult]) -> VerifiedClaim:
         evidence_ids=[item[1] for item in accepted],
         matched_terms=accepted[0][2] if accepted else [],
         evidence_excerpts=[item[3] for item in accepted],
+        evidence_locations=[item[4] for item in accepted],
         confidence=round(min(best_score, 1.0), 3),
     )
 
