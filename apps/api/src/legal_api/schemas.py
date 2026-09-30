@@ -26,6 +26,25 @@ class SearchResponse(BaseModel):
     results: list[SearchResultModel]
 
 
+class VerifiedResearchRequest(BaseModel):
+    question: str = Field(..., min_length=2)
+    context_limit: int = Field(default=5, ge=1, le=10)
+    use_llm: bool = True
+
+
+class VerifiedResearchResponse(BaseModel):
+    question: str
+    answer: str | None = None
+    verified_answer: str | None = None
+    claims: list[dict[str, Any]] = Field(default_factory=list)
+    evidence: list[dict[str, Any]] = Field(default_factory=list)
+    verification_status: str
+    model: str | None = None
+    model_status: str
+    abstention_reason: str | None = None
+    error: str | None = None
+
+
 class ChatRequest(BaseModel):
     question: str = Field(..., min_length=2)
     context_limit: int = Field(default=5, ge=1, le=10)

@@ -23,6 +23,7 @@ from legal_db.llm.ollama import OllamaChatClient, OllamaSettings
 from legal_db.llm.rag import LocalLegalRagPipeline
 from legal_db.quality.production import quality_gate_passed, run_production_quality_checks
 from legal_db.retrieval.service import LegalRetrievalService
+from legal_db.verified.research import build_verified_research
 
 from .schemas import (
     AdminPanelResponse,
@@ -44,6 +45,8 @@ from .schemas import (
     ModelStatusResponse,
     SearchRequest,
     SearchResponse,
+    VerifiedResearchRequest,
+    VerifiedResearchResponse,
     SimilarCasesRequest,
     SimilarCasesResponse,
 )
@@ -239,6 +242,16 @@ try:
             model_status=response.model_status,
             error=response.error,
         )
+
+    @app.post("/v1/verified-research", response_model=VerifiedResearchResponse)
+    def verified_research_route(request: VerifiedResearchRequest) -> VerifiedResearchResponse:
+        result = build_verified_research(
+            request.question,
+            context_limit=request.context_limit,
+            use_llm=request.use_llm,
+            pipeline=LocalLegalRagPipeline(retrieval_service=retrieval_service),
+        )
+        return VerifiedResearchResponse(**result)
 
     @app.post("/v1/cases/brief", response_model=CaseBriefResponse)
     def case_brief_route(request: CaseBriefRequest) -> CaseBriefResponse:

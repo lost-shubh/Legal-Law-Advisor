@@ -20,6 +20,7 @@ Completed so far:
 - Priority statute and section ingestion scaffold, with current staging data including `16` statutes and `5,421` sections.
 - Legal books/materials ingestion with chapters and chunks, currently `3` materials, `26` chapters and `332` chunks in staging.
 - FastAPI vertical slice with search, chat, admin overview, corpus progress, ingestion status, Ollama/extraction model status, case analysis, research brief and similar-cases routes.
+- Evidence-first `/v1/verified-research` route that attaches source evidence, verifies claim overlap and abstains when no authority is available.
 - Retrieval MVP over statutes, books and judgment text, with lexical, semantic and hybrid search modes.
 - Hybrid retrieval now uses reciprocal-rank fusion so lexical and semantic scores are combined by rank rather than incomparable raw score scales.
 - Local deterministic judgment extraction model with staging extraction storage and API status/run routes.
