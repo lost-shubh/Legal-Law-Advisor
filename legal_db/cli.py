@@ -31,6 +31,7 @@ def cmd_extract_pdf(args: argparse.Namespace) -> int:
                 "page_count": result.page_count,
                 "word_count": result.word_count,
                 "extraction_method": result.extraction_method,
+                "ocr_confidence": result.ocr_confidence,
                 "preview": result.clean_text[:1000],
             },
             indent=2,

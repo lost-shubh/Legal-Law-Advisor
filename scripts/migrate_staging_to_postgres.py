@@ -156,6 +156,7 @@ def map_text_extraction_method(method: str | None) -> str | None:
         "PDFPLUMBER": "PDF_TEXT",
         "TESSERACT": "OCR",
         "TESSERACT_OCR": "OCR",
+        "MIXED_OCR": "MIXED",
     }
     allowed = {"PDF_TEXT", "OCR", "MIXED", "MANUAL", "UNKNOWN"}
     mapped = method_map.get(normalized, normalized)

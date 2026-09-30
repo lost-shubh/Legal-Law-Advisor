@@ -4,6 +4,7 @@ import re
 from dataclasses import dataclass
 from importlib.util import find_spec
 from pathlib import Path
+from statistics import mean
 
 
 @dataclass(frozen=True)
@@ -15,6 +16,7 @@ class PdfTextResult:
     word_count: int
     extraction_method: str
     ocr_quality: float = 0.0
+    ocr_confidence: float = 0.0
 
 
 def clean_ocr_text(text: str) -> str:
@@ -90,36 +92,111 @@ def extract_text_pymupdf(path: Path) -> tuple[str, int]:
         return "\n\n".join(text_parts), doc.page_count
 
 
-def ocr_pdf(path: Path, lang: str = "eng+hin", dpi: int = 300) -> tuple[str, int]:
-    import fitz
+def _available_ocr_language(requested: str) -> str:
+    """Use the requested language packs, falling back safely when unavailable."""
+    try:
+        import pytesseract
+
+        available = set(pytesseract.get_languages(config=""))
+    except Exception:
+        return "eng"
+    requested_parts = [part for part in requested.split("+") if part]
+    if requested_parts and all(part in available for part in requested_parts):
+        return "+".join(requested_parts)
+    return "eng" if "eng" in available else (next(iter(available), "eng"))
+
+
+def _preprocess_page(image):
+    """Improve scanned legal pages using only the project's existing Pillow dependency."""
+    from PIL import ImageFilter, ImageOps
+
+    gray = ImageOps.grayscale(image)
+    return ImageOps.autocontrast(gray).filter(ImageFilter.MedianFilter(size=3))
+
+
+def _ocr_page(image, language: str) -> tuple[str, float]:
     import pytesseract
+
+    data = pytesseract.image_to_data(
+        _preprocess_page(image),
+        lang=language,
+        config="--oem 3 --psm 6",
+        output_type=pytesseract.Output.DICT,
+    )
+    words: list[str] = []
+    confidences: list[float] = []
+    for value, raw_conf in zip(data.get("text", []), data.get("conf", [])):
+        value = (value or "").strip()
+        if value:
+            words.append(value)
+        try:
+            confidence = float(raw_conf)
+        except (TypeError, ValueError):
+            continue
+        if confidence >= 0:
+            confidences.append(confidence / 100.0)
+    return " ".join(words), round(mean(confidences), 3) if confidences else 0.0
+
+
+def _ocr_pdf_details(path: Path, lang: str = "eng+hin", dpi: int = 300) -> tuple[str, int, float]:
+    import fitz
     from PIL import Image
 
-    doc = fitz.open(path)
+    language = _available_ocr_language(lang)
     text_parts: list[str] = []
-    for page in doc:
-        matrix = fitz.Matrix(dpi / 72, dpi / 72)
-        pix = page.get_pixmap(matrix=matrix)
-        image = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
-        text_parts.append(pytesseract.image_to_string(image, lang=lang, config="--psm 6 --oem 3"))
-    return "\n\n".join(text_parts), doc.page_count
+    confidences: list[float] = []
+    with fitz.open(path) as doc:
+        for page in doc:
+            pix = page.get_pixmap(matrix=fitz.Matrix(dpi / 72, dpi / 72), alpha=False)
+            image = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+            text, confidence = _ocr_page(image, language)
+            text_parts.append(text)
+            if confidence:
+                confidences.append(confidence)
+        return "\n\n".join(text_parts), doc.page_count, round(mean(confidences), 3) if confidences else 0.0
+
+
+def ocr_pdf(path: Path, lang: str = "eng+hin", dpi: int = 300) -> tuple[str, int]:
+    """Backward-compatible OCR API; confidence is retained by extract_pdf_text."""
+    text, page_count, _ = _ocr_pdf_details(path, lang=lang, dpi=dpi)
+    return text, page_count
+
+
+def _hybrid_pdf_details(path: Path, lang: str = "eng+hin", dpi: int = 300) -> tuple[str, int, float]:
+    """Keep reliable native pages and OCR only pages with weak/no text."""
+    import fitz
+    from PIL import Image
+
+    language = _available_ocr_language(lang)
+    parts: list[str] = []
+    confidences: list[float] = []
+    with fitz.open(path) as doc:
+        for page in doc:
+            native = page.get_text("text") or ""
+            if len(native.split()) >= 35 and estimate_text_quality(native, 1) >= 0.55:
+                parts.append(native)
+                continue
+            pix = page.get_pixmap(matrix=fitz.Matrix(dpi / 72, dpi / 72), alpha=False)
+            image = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+            text, confidence = _ocr_page(image, language)
+            parts.append(text if text else native)
+            if confidence:
+                confidences.append(confidence)
+        return "\n\n".join(parts), doc.page_count, round(mean(confidences), 3) if confidences else 0.0
 
 
 def extract_pdf_text(path: str | Path, lang: str = "eng+hin") -> PdfTextResult:
     pdf_path = Path(path)
     pdf_type = classify_pdf(pdf_path)
+    ocr_confidence = 0.0
     if pdf_type == "TEXT_PDF":
         raw_text, page_count = extract_text_pdf(pdf_path)
         method = "PDF_TEXT"
     elif pdf_type == "MIXED_PDF":
-        raw_text, page_count = extract_text_pdf(pdf_path)
-        if len(raw_text.split()) < 100:
-            raw_text, page_count = ocr_pdf(pdf_path, lang=lang)
-            method = "OCR"
-        else:
-            method = "MIXED"
+        raw_text, page_count, ocr_confidence = _hybrid_pdf_details(pdf_path, lang=lang)
+        method = "MIXED" if ocr_confidence == 0.0 else "MIXED_OCR"
     else:
-        raw_text, page_count = ocr_pdf(pdf_path, lang=lang)
+        raw_text, page_count, ocr_confidence = _ocr_pdf_details(pdf_path, lang=lang)
         method = "OCR"
     clean_text = clean_ocr_text(raw_text)
     word_count = len(clean_text.split())
@@ -132,5 +209,6 @@ def extract_pdf_text(path: str | Path, lang: str = "eng+hin") -> PdfTextResult:
         word_count=word_count,
         extraction_method=method,
         ocr_quality=ocr_quality,
+        ocr_confidence=ocr_confidence,
     )
 

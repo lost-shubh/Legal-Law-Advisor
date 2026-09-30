@@ -18,6 +18,7 @@ def extract_pdf_text_task(path: str) -> dict[str, object]:
         "page_count": result.page_count,
         "word_count": result.word_count,
         "extraction_method": result.extraction_method,
+        "ocr_confidence": result.ocr_confidence,
         "clean_text_preview": result.clean_text[:500],
     }
 
