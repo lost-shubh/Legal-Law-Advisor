@@ -243,6 +243,23 @@ class ApiAppTest(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("results", response.json())
 
+    def test_retrieval_evaluation_route_is_available(self) -> None:
+        from fastapi.testclient import TestClient
+
+        from legal_api.main import app
+
+        client = TestClient(app)
+        response = client.post(
+            "/v1/evaluation/retrieval",
+            json={
+                "k": 3,
+                "cases": [{"query": "constitution basic structure", "relevant_ids": ["not-present"]}],
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["cases"], 1)
+        self.assertIn("mean_reciprocal_rank", response.json())
+
     def test_fastapi_search_route_accepts_semantic_mode(self) -> None:
         from fastapi.testclient import TestClient
 

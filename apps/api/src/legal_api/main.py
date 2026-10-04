@@ -23,6 +23,7 @@ from legal_db.llm.ollama import OllamaChatClient, OllamaSettings
 from legal_db.llm.rag import LocalLegalRagPipeline
 from legal_db.quality.production import quality_gate_passed, run_production_quality_checks
 from legal_db.retrieval.service import LegalRetrievalService
+from legal_db.evaluation.retrieval import RetrievalCase, evaluate_retrieval
 from legal_db.verified.research import build_verified_research
 
 from .schemas import (
@@ -45,6 +46,8 @@ from .schemas import (
     ModelStatusResponse,
     SearchRequest,
     SearchResponse,
+    RetrievalEvaluationRequest,
+    RetrievalEvaluationResponse,
     VerifiedResearchRequest,
     VerifiedResearchResponse,
     SimilarCasesRequest,
@@ -210,6 +213,19 @@ try:
             mode=request.mode,
         )
         return SearchResponse(query=request.query, results=[item.to_dict() for item in results])
+
+    @app.post("/v1/evaluation/retrieval", response_model=RetrievalEvaluationResponse)
+    def retrieval_evaluation_route(request: RetrievalEvaluationRequest) -> RetrievalEvaluationResponse:
+        cases = [
+            RetrievalCase(query=item.query, relevant_ids=frozenset(item.relevant_ids), mode=item.mode)
+            for item in request.cases
+        ]
+
+        def search(query: str, limit: int, mode: str):
+            return retrieval_service.search(query, limit=limit, mode=mode)
+
+        metrics = evaluate_retrieval(cases, search, k=request.k, result_id=lambda item: item.title)
+        return RetrievalEvaluationResponse(**metrics.to_dict())
 
     @app.post("/v1/chat", response_model=ChatResponse)
     def chat_route(request: ChatRequest) -> ChatResponse:

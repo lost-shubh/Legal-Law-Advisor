@@ -26,6 +26,25 @@ class SearchResponse(BaseModel):
     results: list[SearchResultModel]
 
 
+class RetrievalEvaluationCaseModel(BaseModel):
+    query: str = Field(..., min_length=2)
+    relevant_ids: list[str] = Field(..., min_length=1)
+    mode: str = "hybrid"
+
+
+class RetrievalEvaluationRequest(BaseModel):
+    cases: list[RetrievalEvaluationCaseModel] = Field(..., min_length=1, max_length=500)
+    k: int = Field(default=10, ge=1, le=50)
+
+
+class RetrievalEvaluationResponse(BaseModel):
+    cases: int
+    k: int
+    recall_at_k: float
+    mean_reciprocal_rank: float
+    zero_result_rate: float
+
+
 class VerifiedResearchRequest(BaseModel):
     question: str = Field(..., min_length=2)
     context_limit: int = Field(default=5, ge=1, le=10)
