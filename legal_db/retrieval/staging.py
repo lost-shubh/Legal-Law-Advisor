@@ -490,9 +490,14 @@ class StagingRetrievalService:
     def _search_judgments(
         self, conn: sqlite3.Connection, terms: set[str]
     ) -> list[SearchResult]:
+        has_page_spans = any(
+            row[1] == "page_spans_json"
+            for row in conn.execute("PRAGMA table_info(document_texts)").fetchall()
+        )
+        page_expression = "dt.page_spans_json" if has_page_spans else "NULL"
         rows = conn.execute(
-            """
-            SELECT c.title, c.case_number, c.decision_date, j.pdf_url, dt.clean_text
+            f"""
+            SELECT c.title, c.case_number, c.decision_date, j.pdf_url, dt.clean_text, {page_expression}
             FROM judgments j
             JOIN cases c ON c.id = j.case_id
             JOIN document_texts dt ON dt.source_document_id = j.source_document_id
@@ -500,10 +505,12 @@ class StagingRetrievalService:
             """
         ).fetchall()
         results = []
-        for title, case_number, decision_date, pdf_url, clean_text in rows:
+        for title, case_number, decision_date, pdf_url, clean_text, page_spans_json in rows:
             score = self._score(clean_text, terms)
             if score <= 0:
                 continue
+            metadata = {"decision_date": decision_date, "case_number": case_number}
+            metadata.update(_locate_page_metadata(clean_text or "", terms, page_spans_json))
             results.append(
                 SearchResult(
                     source_type="JUDGMENT",
@@ -511,7 +518,36 @@ class StagingRetrievalService:
                     snippet=make_snippet(clean_text, terms),
                     score=score,
                     source_url=pdf_url,
-                    metadata={"decision_date": decision_date, "case_number": case_number},
+                    metadata=metadata,
                 )
             )
         return results
+
+
+def _locate_page_metadata(text: str, terms: set[str], page_spans_json: str | None) -> dict[str, Any]:
+    """Map a lexical hit to its stored page span when ingestion supplied one."""
+    if not text or not page_spans_json:
+        return {}
+    try:
+        spans = json.loads(page_spans_json)
+    except (TypeError, json.JSONDecodeError):
+        return {}
+    if not isinstance(spans, list):
+        return {}
+    lowered = text.lower()
+    positions = [lowered.find(term.lower()) for term in terms if lowered.find(term.lower()) >= 0]
+    if not positions:
+        return {}
+    position = min(positions)
+    for span in spans:
+        if not isinstance(span, dict):
+            continue
+        start = int(span.get("character_start", -1))
+        end = int(span.get("character_end", -1))
+        if start <= position <= end:
+            return {
+                "page": span.get("page"),
+                "character_start": position,
+                "character_end": min(position + 1, len(text)),
+            }
+    return {}

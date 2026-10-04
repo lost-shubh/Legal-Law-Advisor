@@ -232,6 +232,7 @@ CREATE TABLE IF NOT EXISTS document_texts (
   word_count INTEGER,
   raw_text TEXT,
   clean_text TEXT,
+  page_spans_json TEXT,
   created_at TEXT DEFAULT CURRENT_TIMESTAMP,
   UNIQUE(source_document_id, extraction_method)
 );

@@ -70,6 +70,7 @@ def ensure_staging_judgment_tables(conn: sqlite3.Connection) -> None:
           word_count INTEGER,
           raw_text TEXT,
           clean_text TEXT,
+          page_spans_json TEXT,
           created_at TEXT DEFAULT CURRENT_TIMESTAMP,
           UNIQUE(source_document_id, extraction_method)
         )
@@ -109,6 +110,7 @@ def ensure_staging_judgment_tables(conn: sqlite3.Connection) -> None:
         """
     )
     ensure_column(conn, "judgments", "ocr_quality", "REAL")
+    ensure_column(conn, "document_texts", "page_spans_json", "TEXT")
     conn.commit()
 
 
@@ -493,13 +495,14 @@ class JudgmentManifestIngestionPipeline:
         conn.execute(
             """
             INSERT INTO document_texts
-            (source_document_id, extraction_method, page_count, word_count, raw_text, clean_text)
-            VALUES (?, ?, ?, ?, ?, ?)
+            (source_document_id, extraction_method, page_count, word_count, raw_text, clean_text, page_spans_json)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(source_document_id, extraction_method) DO UPDATE SET
               page_count = excluded.page_count,
               word_count = excluded.word_count,
               raw_text = excluded.raw_text,
-              clean_text = excluded.clean_text
+              clean_text = excluded.clean_text,
+              page_spans_json = excluded.page_spans_json
             """,
             (
                 source_document_id,
@@ -508,6 +511,7 @@ class JudgmentManifestIngestionPipeline:
                 result.word_count,
                 result.raw_text,
                 result.clean_text,
+                json.dumps(result.page_spans),
             ),
         )
         conn.execute(

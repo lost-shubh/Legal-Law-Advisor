@@ -74,6 +74,7 @@ Completed so far:
 - OCR/text quality scoring and extraction gating for too-short or low-quality judgment text.
 - Preprocessed, confidence-aware Tesseract OCR with automatic language-pack fallback for scanned PDFs.
 - Page-aware extraction metadata with deterministic character spans for auditable PDF evidence linking.
+- Staging ingestion persists page spans and lexical judgment results expose matched page/character locators when available.
 - Retrieval evaluation utilities for Recall@K, MRR and zero-result rate against human-labelled queries.
 - Automated tests covering API routes, retrieval, local semantic search, similar cases, case intake, citation parsing, chunking, ingestion tracking, manifest ingestion and SCI/e-SCR manifest generation.
 
