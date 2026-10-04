@@ -524,10 +524,10 @@
       const analysis = payload.analysis || {};
       const blocks = [
         ["Issue Tags", tags(analysis.issue_tags || []) || "<span class='tag warn'>none</span>"],
-        ["Evidence", tags(analysis.evidence_categories || []) || "<span class='tag warn'>none</span>"],
+        ["Evidence", tags(Object.keys(analysis.evidence_found || {})) || "<span class='tag warn'>none</span>"],
         ["Missing", tags(analysis.missing_documents || []) || "<span class='tag ok'>none detected</span>"],
-        ["Urgency", tags(analysis.urgency_warnings || []) || "<span class='tag ok'>none detected</span>"],
-        ["Dates", tags(analysis.dates_detected || []) || "<span class='tag warn'>none</span>"]
+        ["Urgency", tags(analysis.warnings || []) || "<span class='tag ok'>none detected</span>"],
+        ["Dates", tags(analysis.dates_found || []) || "<span class='tag warn'>none</span>"]
       ];
       $("caseOutput").innerHTML = blocks.map(([label, value]) => `
         <div class="result">

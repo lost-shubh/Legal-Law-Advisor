@@ -9,6 +9,7 @@ from legal_db.retrieval.staging import SearchResult
 BNS_SOURCE = "https://www.mha.gov.in/sites/default/files/250883_english_01042024.pdf"
 BSA_SOURCE = "https://www.indiacode.nic.in/bitstream/123456789/20063/1/a2023-47.pdf"
 BNSS_SOURCE = "https://www.indiacode.nic.in/bitstream/123456789/20335/1/a2023-46.pdf"
+NI_ACT_SOURCE = "https://www.indiacode.nic.in/handle/123456789/2189"
 
 
 @dataclass(frozen=True)
@@ -32,6 +33,27 @@ class LegalAnchor:
 
 
 LEGAL_ANCHORS: tuple[LegalAnchor, ...] = (
+    LegalAnchor(
+        key="ni_act_138_cheque_dishonour",
+        issue_tags=("CHEQUE_BOUNCE",),
+        title="Negotiable Instruments Act, 1881 Section 138: Dishonour of cheque",
+        snippet=(
+            "Primary statutory anchor for cheque dishonour: verify the legally enforceable debt, "
+            "presentation, bank return memo, demand notice, service, payment window and complaint limitation."
+        ),
+        source_url=NI_ACT_SOURCE,
+        priority=1,
+    ),
+    LegalAnchor(
+        key="ni_act_139_cheque_presumption",
+        issue_tags=("CHEQUE_BOUNCE",),
+        title="Negotiable Instruments Act, 1881 Section 139: Presumption in favour of holder",
+        snippet=(
+            "Relevant statutory presumption concerning the cheque holder; counsel must test the facts and any rebuttal evidence."
+        ),
+        source_url=NI_ACT_SOURCE,
+        priority=2,
+    ),
     LegalAnchor(
         key="bns_34_private_defence",
         issue_tags=("PRIVATE_DEFENCE",),
@@ -194,6 +216,11 @@ def anchor_results_for_analysis(analysis: CaseAnalysis, limit: int = 13) -> list
 def anchor_query_terms(analysis: CaseAnalysis) -> list[str]:
     issues = set(analysis.issue_tags)
     terms: list[str] = []
+    if "CHEQUE_BOUNCE" in issues:
+        terms.append(
+            "Negotiable Instruments Act section 138 cheque dishonour legally enforceable debt "
+            "return memo demand notice service complaint limitation section 139"
+        )
     if {"PRIVATE_DEFENCE", "MURDER_CHARGE", "NIGHT_HOUSE_BREAKING"} & issues:
         terms.extend(
             [

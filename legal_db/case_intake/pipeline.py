@@ -40,7 +40,10 @@ def build_case_retrieval_query(case_text: str, analysis: CaseAnalysis) -> str:
 def merge_case_results(anchor_results: list[SearchResult], retrieved: list[SearchResult]) -> list[SearchResult]:
     merged: list[SearchResult] = []
     seen: set[tuple[str, str | None]] = set()
-    for result in [*anchor_results, *retrieved]:
+    # Preserve corpus-ranked results first; anchors fill gaps when retrieval is
+    # sparse or unavailable. This keeps labelled/source-specific matches ahead
+    # of generic statutory anchors while still grounding weak queries.
+    for result in [*retrieved, *anchor_results]:
         key = (result.title, result.source_url)
         if key in seen:
             continue
