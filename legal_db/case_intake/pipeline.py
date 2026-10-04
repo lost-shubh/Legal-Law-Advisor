@@ -11,6 +11,18 @@ from legal_db.retrieval.service import LegalRetrievalService
 from legal_db.retrieval.staging import SearchResult
 
 
+CASE_RESULT_GUARD_TERMS: dict[str, tuple[str, ...]] = {
+    "CHEQUE_BOUNCE": (
+        "cheque",
+        "dishonour",
+        "dishonored",
+        "section 138",
+        "negotiable instruments",
+        "bank return",
+    ),
+}
+
+
 @dataclass(frozen=True)
 class CaseIntakeResponse:
     analysis: CaseAnalysis
@@ -52,6 +64,28 @@ def merge_case_results(anchor_results: list[SearchResult], retrieved: list[Searc
     return merged
 
 
+def guard_case_results(analysis: CaseAnalysis, results: list[SearchResult]) -> list[SearchResult]:
+    """Remove weakly matching judgment results for topics with a known vocabulary."""
+    terms = next(
+        (CASE_RESULT_GUARD_TERMS[tag] for tag in analysis.issue_tags if tag in CASE_RESULT_GUARD_TERMS),
+        None,
+    )
+    if not terms:
+        return results
+
+    guarded: list[SearchResult] = []
+    for result in results:
+        source = (result.source_type or "").upper()
+        if "JUDGMENT" not in source:
+            guarded.append(result)
+            continue
+        haystack = f"{result.title} {result.snippet}".lower()
+        matches = sum(term in haystack for term in terms)
+        if matches >= 2:
+            guarded.append(result)
+    return guarded
+
+
 class CaseIntakePipeline:
     def __init__(
         self,
@@ -73,6 +107,11 @@ class CaseIntakePipeline:
         context, results = self.retrieval_service.retrieve_context(
             retrieval_query,
             limit=context_limit,
+        )
+        results = guard_case_results(analysis, results)
+        context = "\n\n---\n\n".join(
+            f"Source: {item.source_type} | {item.title}\nURL: {item.source_url or 'local'}\n{item.snippet}"
+            for item in results
         )
         results = merge_case_results(anchor_results, results)
         if anchor_results:

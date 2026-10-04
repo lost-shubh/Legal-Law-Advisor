@@ -1,11 +1,31 @@
 import unittest
 
 from legal_db.case_intake.analyzer import analyze_case_text
-from legal_db.case_intake.pipeline import CaseIntakePipeline
+from legal_db.case_intake.pipeline import CaseIntakePipeline, guard_case_results
 from legal_db.retrieval.staging import SearchResult
 
 
 class CaseIntakeTest(unittest.TestCase):
+    def test_cheque_case_guard_drops_unrelated_judgment(self) -> None:
+        analysis = analyze_case_text("Cheque dishonour under Section 138 and bank return memo.")
+        results = [
+            SearchResult(
+                source_type="JUDGMENT_SEMANTIC",
+                title="Prajwala vs Union of India",
+                snippet="A constitutional public-interest matter involving court directions.",
+                score=0.9,
+            ),
+            SearchResult(
+                source_type="JUDGMENT",
+                title="Cheque dishonour under Section 138",
+                snippet="Dishonoured cheque and bank return memo under the Negotiable Instruments Act.",
+                score=0.8,
+            ),
+        ]
+        guarded = guard_case_results(analysis, results)
+        self.assertEqual(len(guarded), 1)
+        self.assertIn("Cheque dishonour", guarded[0].title)
+
     def test_detects_issue_tags_and_missing_documents(self) -> None:
         analysis = analyze_case_text(
             "My cheque was dishonoured on 12/04/2025. I sent a legal notice "
