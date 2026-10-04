@@ -15,6 +15,24 @@ from legal_db.search.embeddings import (
 PRODUCTION_EMBEDDING_DIMENSIONS = 1536
 
 
+def _locate_page_metadata(text_value: str, terms: set[str], spans: Any) -> dict[str, Any]:
+    if not text_value or not isinstance(spans, list):
+        return {}
+    lowered = text_value.lower()
+    positions = [lowered.find(term.lower()) for term in terms if lowered.find(term.lower()) >= 0]
+    if not positions:
+        return {}
+    position = min(positions)
+    for span in spans:
+        if not isinstance(span, dict):
+            continue
+        start = int(span.get("character_start", -1))
+        end = int(span.get("character_end", -1))
+        if start <= position <= end:
+            return {"page": span.get("page"), "character_start": position, "character_end": min(position + 1, len(text_value))}
+    return {}
+
+
 def text(statement: str) -> Any:
     from sqlalchemy import text as sqlalchemy_text
 
@@ -356,6 +374,7 @@ class ProductionRetrievalService:
                 metadata={
                     "case_number": row["case_number"],
                     "decision_date": str(row["decision_date"]) if row["decision_date"] else None,
+                    **_locate_page_metadata(row["snippet_text"] or "", query_terms, row["page_spans_json"]),
                 },
             )
             for row in conn.execute(
@@ -367,6 +386,7 @@ class ProductionRetrievalService:
                       c.case_number,
                       c.decision_date,
                       j.pdf_url AS source_url,
+                      j.page_spans_json,
                       COALESCE(
                         NULLIF(CONCAT_WS(' v. ', c.petitioner, c.respondent), ''),
                         c.case_number,

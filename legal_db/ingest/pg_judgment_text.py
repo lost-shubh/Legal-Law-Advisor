@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -111,6 +112,7 @@ def store_text_backfill_result(
             SET raw_text = :raw_text,
                 clean_text = :clean_text,
                 text_extraction_method = :text_extraction_method,
+                page_spans_json = CAST(:page_spans_json AS JSONB),
                 page_count = :page_count,
                 word_count = :word_count,
                 ocr_quality = :ocr_quality,
@@ -123,7 +125,8 @@ def store_text_backfill_result(
             "judgment_id": judgment_id,
             "raw_text": result.raw_text.replace("\x00", ""),
             "clean_text": result.clean_text.replace("\x00", ""),
-            "text_extraction_method": result.extraction_method,
+            "text_extraction_method": "MIXED" if result.extraction_method == "MIXED_OCR" else result.extraction_method,
+            "page_spans_json": json.dumps(list(result.page_spans)),
             "page_count": result.page_count,
             "word_count": result.word_count,
             "ocr_quality": result.ocr_quality,

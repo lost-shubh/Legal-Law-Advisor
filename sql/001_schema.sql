@@ -258,6 +258,7 @@ CREATE TABLE IF NOT EXISTS judgments (
     'PDF_TEXT', 'OCR', 'MIXED', 'MANUAL', 'UNKNOWN'
   )),
   ocr_quality NUMERIC(4,3),
+  page_spans_json JSONB,
   page_count INTEGER,
   word_count INTEGER,
   source_document_id BIGINT REFERENCES source_documents(id),

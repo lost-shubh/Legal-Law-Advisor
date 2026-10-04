@@ -138,6 +138,7 @@ docker compose up -d
 psql $env:DATABASE_URL -f .\sql\001_schema.sql
 psql $env:DATABASE_URL -f .\sql\002_indexes.sql
 psql $env:DATABASE_URL -f .\sql\003_seed_reference.sql
+psql $env:DATABASE_URL -f .\sql\004_page_spans.sql
 ```
 
 4. Install Python dependencies in a virtual environment:
