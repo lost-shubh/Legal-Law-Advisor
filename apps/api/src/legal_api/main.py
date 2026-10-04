@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from legal_db.case_intake.pipeline import CaseIntakePipeline
+from legal_db.case_intake.analyzer import analyze_case_text
+from legal_db.case_intake.pipeline import CaseIntakePipeline, guard_similar_case_results
 from legal_db.admin.production import (
     production_admin_panels,
     production_corpus_summary,
@@ -281,6 +282,7 @@ try:
     @app.post("/v1/similar-cases", response_model=SimilarCasesResponse)
     def similar_cases_route(request: SimilarCasesRequest) -> SimilarCasesResponse:
         results = retrieval_service.similar_cases(request.case_text, limit=request.limit)
+        results = guard_similar_case_results(analyze_case_text(request.case_text), results)
         return SimilarCasesResponse(results=[item.to_dict() for item in results])
 
 except ImportError:

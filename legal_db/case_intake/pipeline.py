@@ -8,7 +8,7 @@ from legal_db.case_intake.brief import CaseResearchBrief, build_case_research_br
 from legal_db.case_intake.legal_anchors import anchor_query_terms, anchor_results_for_analysis
 from legal_db.llm.ollama import OllamaChatClient, OllamaSettings
 from legal_db.retrieval.service import LegalRetrievalService
-from legal_db.retrieval.staging import SearchResult
+from legal_db.retrieval.staging import SearchResult, SimilarCaseResult
 
 
 CASE_RESULT_GUARD_TERMS: dict[str, tuple[str, ...]] = {
@@ -82,6 +82,25 @@ def guard_case_results(analysis: CaseAnalysis, results: list[SearchResult]) -> l
         haystack = f"{result.title} {result.snippet}".lower()
         matches = sum(term in haystack for term in terms)
         if matches >= 2:
+            guarded.append(result)
+    return guarded
+
+
+def guard_similar_case_results(
+    analysis: CaseAnalysis,
+    results: list[SimilarCaseResult],
+) -> list[SimilarCaseResult]:
+    """Reject similar-case rows without enough topic-specific legal vocabulary."""
+    terms = next(
+        (CASE_RESULT_GUARD_TERMS[tag] for tag in analysis.issue_tags if tag in CASE_RESULT_GUARD_TERMS),
+        None,
+    )
+    if not terms:
+        return results
+    guarded: list[SimilarCaseResult] = []
+    for result in results:
+        haystack = f"{result.case_title} {result.snippet}".lower()
+        if sum(term in haystack for term in terms) >= 2:
             guarded.append(result)
     return guarded
 
