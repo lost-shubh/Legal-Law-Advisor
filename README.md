@@ -73,6 +73,7 @@ Completed so far:
 - SQLite-to-PostgreSQL migration helper with dry-run counts for staging source documents, statutes, sections, judgments and extracted judgment text.
 - OCR/text quality scoring and extraction gating for too-short or low-quality judgment text.
 - Preprocessed, confidence-aware Tesseract OCR with automatic language-pack fallback for scanned PDFs.
+- Page-aware extraction metadata with deterministic character spans for auditable PDF evidence linking.
 - Automated tests covering API routes, retrieval, local semantic search, similar cases, case intake, citation parsing, chunking, ingestion tracking, manifest ingestion and SCI/e-SCR manifest generation.
 
 Current staging corpus snapshot:

@@ -17,6 +17,35 @@ class PdfTextResult:
     extraction_method: str
     ocr_quality: float = 0.0
     ocr_confidence: float = 0.0
+    page_spans: tuple[dict[str, int], ...] = ()
+
+
+def page_spans(text: str, page_count: int) -> tuple[dict[str, int], ...]:
+    """Return deterministic character ranges for page-separated extracted text."""
+    if page_count <= 0:
+        return ()
+    pages = text.split("\n\n")
+    proportional = len(pages) != page_count
+    if proportional:
+        # Some extractors collapse page boundaries; retain a useful proportional map.
+        pages = [text] if page_count == 1 else [text[start:end] for start, end in _proportional_ranges(text, page_count)]
+    spans: list[dict[str, int]] = []
+    cursor = 0
+    for number, value in enumerate(pages, start=1):
+        if proportional:
+            start, end = _proportional_ranges(text, page_count)[number - 1]
+        else:
+            start = text.find(value, cursor) if value else cursor
+            start = max(start, cursor)
+            end = min(start + len(value), len(text))
+        spans.append({"page": number, "character_start": start, "character_end": end})
+        cursor = end + 2
+    return tuple(spans)
+
+
+def _proportional_ranges(text: str, count: int) -> list[tuple[int, int]]:
+    length = len(text)
+    return [(round(length * i / count), round(length * (i + 1) / count)) for i in range(count)]
 
 
 def clean_ocr_text(text: str) -> str:
@@ -210,5 +239,6 @@ def extract_pdf_text(path: str | Path, lang: str = "eng+hin") -> PdfTextResult:
         extraction_method=method,
         ocr_quality=ocr_quality,
         ocr_confidence=ocr_confidence,
+        page_spans=page_spans(raw_text, page_count),
     )
 
