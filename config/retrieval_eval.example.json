@@ -1,0 +1,10 @@
+{
+  "k": 5,
+  "cases": [
+    {
+      "query": "notice requirement under Section 138",
+      "relevant_ids": ["Negotiable Instruments Act Section 138"],
+      "mode": "hybrid"
+    }
+  ]
+}

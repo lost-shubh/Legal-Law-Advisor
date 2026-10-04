@@ -5,9 +5,11 @@ import json
 from pathlib import Path
 
 from legal_db.citations.parser import extract_citations
+from legal_db.evaluation.retrieval import RetrievalCase, evaluate_retrieval
 from legal_db.logging_config import configure_logging
 from legal_db.pdf.ocr import extract_pdf_text
 from legal_db.quality.checks import quality_sql
+from legal_db.retrieval.service import LegalRetrievalService
 
 
 def cmd_quality_sql(_: argparse.Namespace) -> int:
@@ -41,6 +43,19 @@ def cmd_extract_pdf(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_evaluate_retrieval(args: argparse.Namespace) -> int:
+    payload = json.loads(Path(args.path).read_text(encoding="utf-8"))
+    cases = [RetrievalCase.from_dict(item) for item in payload.get("cases", [])]
+    service = LegalRetrievalService()
+
+    def search(query: str, limit: int, mode: str):
+        return service.search(query, limit=limit, mode=mode)
+
+    metrics = evaluate_retrieval(cases, search, k=payload.get("k", args.k))
+    print(json.dumps(metrics.to_dict(), indent=2))
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="legal-db")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -56,6 +71,13 @@ def build_parser() -> argparse.ArgumentParser:
     pdf.add_argument("path")
     pdf.add_argument("--lang", default="eng+hin")
     pdf.set_defaults(func=cmd_extract_pdf)
+
+    evaluation = subparsers.add_parser(
+        "evaluate-retrieval", help="Evaluate retrieval against labelled query cases"
+    )
+    evaluation.add_argument("path", help="JSON evaluation case file")
+    evaluation.add_argument("--k", type=int, default=10)
+    evaluation.set_defaults(func=cmd_evaluate_retrieval)
 
     return parser
 
